@@ -39,7 +39,7 @@ Each genre in `GENRES` gets `key: { root, scale, chords }`. `chords` is a progre
 - All note calls pass the genre's `scale` and `root`.
 
 ### `melody.js`
-- The resolve set changes from {0, 4, 5} to {0, 4} (root or 5th). That holds in both 5- and 7-note scales.
+- `makeMotif` and `develop` take the scale length `n` (default 5). The motif resolves to the nearest of {0, 4, n} (root, 5th, octave root). Pentatonic behaviour, and so Ambient, is unchanged.
 
 ## Part 2 — Patterns and sounds
 
@@ -127,7 +127,7 @@ Each genre in `GENRES` gets `key: { root, scale, chords }`. `chords` is a progre
 - `web/audio/patterns.js` — keys, new grids, `g` weights, pad cells without degrees.
 - `web/audio/mapping.js` — `note()` takes scale and root.
 - `web/audio/evolution.js` — chord tracking, bass relative to chord, pad current chord, lead strong-beat snap, drum weights.
-- `web/audio/melody.js` — resolve set {0, 4}.
+- `web/audio/melody.js` — scale-length parameter for the resolve set.
 - `web/audio/kits.js` — new kits, voice types and the `rim` piece.
 - `web/audio-test.mjs` — updated and new tests; the fake Tone gains any new classes.
 
