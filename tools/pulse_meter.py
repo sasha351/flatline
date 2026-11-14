@@ -41,7 +41,7 @@ while True:
     out = subprocess.run(['ssh', '-o', 'BatchMode=yes', '-o', 'ConnectTimeout=8', 'flatline', CMD], capture_output=True, text=True).stdout
     rows = [l.split(',') for l in out.splitlines() if l and not l.startswith('#')]
     print(time.strftime('%H:%M:%S'))
-    for s in range(3):  # sensor 4 is broken for now
+    for s in range(4):
         v = np.array([[float(r[s * 2]), float(r[s * 2 + 1])] for r in rows if len(r) > s * 2 + 1 and r[s * 2] and r[s * 2 + 1]])
         m = measure(v[:, 0], v[:, 1]) if len(v) else None
         print(f'  sensor {s + 1}: ' + ('no finger' if m is None else
