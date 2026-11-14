@@ -1,7 +1,9 @@
 import { VOICES } from '../bus.js';
 import { GENRES } from './patterns.js';
 import { note, phraseSeed } from './mapping.js';
+import { makeMotif, develop } from './melody.js';
 
+const LEAD = VOICES.indexOf('lead');
 const clamp = (value, lo, hi) => Math.min(hi, Math.max(lo, value));
 const LIMITS = {
   bass: [33, 64],
@@ -19,18 +21,34 @@ function fitNotes(voice, notes) {
   });
 }
 
-function voiceEvent(voice, cell, stepSeconds, offset, heart) {
+export function snapToChord(degree, chord, n) {
+  const tones = chord.map((c) => c % n);
+  let best = degree, dist = Infinity;
+  for (let m = Math.floor(degree / n) - 1; m <= Math.floor(degree / n) + 1; m++) {
+    for (const t of tones) {
+      const cand = t + m * n;
+      if (cand < 0) continue;
+      const d = Math.abs(cand - degree);
+      if (d < dist || (d === dist && cand < best)) { best = cand; dist = d; }
+    }
+  }
+  return best;
+}
+
+function voiceEvent(voice, cell, stepSeconds, offset, heart, key, chord, weight = 1) {
   const pressure = heart?.on ? clamp(Number(heart.press), 0, 1) : 0.5;
   if (voice === 'drums') {
     return {
       voice,
-      params: { drum: cell, velocity: clamp(0.35 + pressure * 0.45, 0, 1) },
+      params: { drum: cell, velocity: clamp((0.35 + pressure * 0.45) * weight, 0, 1) },
       offset,
     };
   }
   const notes = voice === 'pad'
-    ? cell.degrees.map((degree) => note(degree, cell.octave))
-    : [note(cell.degree, cell.octave)];
+    ? (cell.degrees ?? chord).map((degree) => note(degree, cell.octave ?? 0, key.scale, key.root))
+    : [voice === 'bass'
+      ? note((chord ? chord[0] : 0) + cell.degree, cell.octave + (note(chord ? chord[0] : 0, -1, key.scale, key.root) < LIMITS.bass[0] ? 1 : 0), key.scale, key.root)
+      : note(cell.degree, cell.octave, key.scale, key.root)];
   return {
     voice,
     params: {
@@ -47,6 +65,8 @@ export function createEvolution(genreName) {
   if (!genre) throw new RangeError(`Unknown genre: ${genreName}`);
   const selected = Object.fromEntries(VOICES.map((voice) => [voice, 0]));
   let localStep = 0;
+  // Lead: heart-made motif; the genre lead pattern is only the rhythm template.
+  let motif = null, motifSeed = 0, motifPhrase = 0, degrees = null, onset = 0;
 
   return {
     next({ raws = [], hearts = [], stepSeconds = 0.125 } = {}) {
@@ -61,11 +81,27 @@ export function createEvolution(genreName) {
             selected[voice] = (phraseSeed(raws[index] >>> 0, heart) + phrase) % variants.length;
           }
         });
+        if (motif) {
+          motifPhrase++;
+          degrees = develop(motif, motifPhrase, motifSeed, hearts[LEAD], genre.key.scale.length);
+          onset = 0;
+        }
+      }
+
+      const leadHeart = hearts[LEAD];
+      if (!leadHeart?.on) motif = degrees = null; // finger lift: re-landing gives a new tune
+      else if (leadHeart.settled && motif === null) {
+        motifSeed = phraseSeed(raws[LEAD] >>> 0, leadHeart);
+        motif = degrees = makeMotif(motifSeed, leadHeart, genre.key.scale.length);
+        motifPhrase = 0;
+        onset = 0;
       }
 
       const offset = step % 2 === 1 ? genre.swing * stepSeconds : 0;
       const position = step % 16;
       const events = [];
+      const { key } = genre;
+      const chord = key.chords ? key.chords[Math.floor(step / 16) % key.chords.length] : null;
       VOICES.forEach((voice, index) => {
         const heart = hearts[index];
         if (!heart?.on) return;
@@ -73,11 +109,19 @@ export function createEvolution(genreName) {
         if (voice === 'drums') {
           Object.entries(variant).forEach(([drum, grid]) => {
             const hit = grid[position];
-            if (hit) events.push(voiceEvent(voice, drum, stepSeconds, offset, heart));
+            if (hit) events.push(voiceEvent(voice, drum, stepSeconds, offset, heart, key, chord, hit));
           });
         } else if (variant[position]) {
-          const cell = variant[position];
-          events.push(voiceEvent(voice, cell, stepSeconds, offset, heart));
+          let cell = variant[position];
+          if (voice === 'lead' && degrees) {
+            const n = variant.filter(Boolean).length;
+            const len = Math.max(1, Math.min(16, Math.floor(n * genre.phraseBars / 2)));
+            let deg = degrees[onset++ % len];
+            if (deg === null) return;
+            if (chord && position % 4 === 0) deg = snapToChord(deg, chord, key.scale.length);
+            cell = { ...cell, degree: deg };
+          }
+          events.push(voiceEvent(voice, cell, stepSeconds, offset, heart, key, chord));
         }
       });
       return events;

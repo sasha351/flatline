@@ -1,19 +1,13 @@
 // Song tempo from the drum finger's heart. Pure.
+import { GENRES } from './patterns.js';
 
 const clamp = (x, lo, hi) => Math.min(hi, Math.max(lo, x));
 
 // Heart rate 50..110 maps linearly into the selected genre's bounded range.
 export function songBpm(hr, genreName) {
-  const { min, max } = GENRE_TEMPOS[genreName];
+  const { min, max } = GENRES[genreName].tempo;
   return min + (max - min) * clamp((hr - 50) / 60, 0, 1);
 }
-
-const GENRE_TEMPOS = {
-  'French house': { min: 112, max: 128, default: 120 },
-  'UK garage': { min: 128, max: 138, default: 132 },
-  Ambient: { min: 60, max: 90, default: 72 },
-  'Russian hardbass': { min: 145, max: 165, default: 150 },
-};
 
 // Tempo follower. update(drumHeart) -> target BPM.
 //   genre default while the drum finger is off or unsettled
@@ -22,7 +16,7 @@ const GENRE_TEMPOS = {
 //   release finger lifts: back to the genre default
 // The caller glides the transport to each new target over 2 bars.
 export function createTempo(genreName) {
-  const genre = GENRE_TEMPOS[genreName];
+  const genre = GENRES[genreName]?.tempo;
   if (!genre) throw new RangeError(`Unknown genre: ${genreName}`);
   let target = genre.default;
   let locked = false;
