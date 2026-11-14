@@ -1,0 +1,197 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Sensor Check</title>
+  <style>
+    :root {
+      --bg: #0e1220; --card: #171c2e; --line: #2a3150; --text: #e9ecf8; --muted: #8d94b3;
+      --ok: #5fd39a; --warn: #f2c14e; --bad: #ff7a7a; --off: #59607e;
+      --c0: #ff9e7a; --c1: #7ad1ff; --c2: #ffe07a; --c3: #c79bff;
+      --mono: ui-monospace, SFMono-Regular, Menlo, monospace;
+    }
+    @media (prefers-color-scheme: light) {
+      :root { --bg: #f4f5fa; --card: #fff; --line: #dde0ec; --text: #171a2b; --muted: #5d6380;
+        --ok: #1f9d63; --warn: #b7860b; --bad: #d64545; --off: #9aa0b8;
+        --c0: #e0683f; --c1: #2c96d1; --c2: #c99a14; --c3: #8a5cd6; }
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--bg); color: var(--text); font: 15px/1.4 system-ui, sans-serif; }
+    header { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; padding: 16px; border-bottom: 1px solid var(--line); }
+    h1 { font-size: 18px; margin: 0 auto 0 0; }
+    button { font: 600 14px system-ui, sans-serif; color: var(--text); background: var(--card);
+      border: 1px solid var(--line); border-radius: 8px; padding: 8px 14px; cursor: pointer; }
+    button:hover:not(:disabled) { border-color: var(--muted); }
+    button:disabled { opacity: .45; cursor: default; }
+    #status { width: 100%; margin: 0; color: var(--muted); font-family: var(--mono); font-size: 13px; }
+    #status[data-state="live"] { color: var(--ok); }
+    #status[data-state="error"] { color: var(--bad); }
+    main { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 420px), 1fr)); gap: 16px; padding: 16px; }
+    .card { background: var(--card); border: 1px solid var(--line); border-top: 3px solid var(--c); border-radius: 10px; padding: 14px; min-width: 0; }
+    .top { display: flex; align-items: baseline; gap: 10px; }
+    .top h2 { font-size: 16px; margin: 0; }
+    .where { color: var(--muted); font-size: 12px; font-family: var(--mono); }
+    .pill { margin-left: auto; font-size: 12px; font-weight: 600; padding: 2px 10px; border-radius: 99px;
+      border: 1px solid currentColor; color: var(--off); white-space: nowrap; }
+    .pill[data-s="finger"] { color: var(--ok); }
+    .pill[data-s="nofinger"] { color: var(--warn); }
+    .pill[data-s="missing"], .pill[data-s="sat"] { color: var(--bad); }
+    .nums { display: flex; align-items: center; gap: 18px; margin: 10px 0 8px; }
+    .raw { font: 600 28px var(--mono); font-variant-numeric: tabular-nums; }
+    .bpm { font: 600 18px var(--mono); color: var(--muted); font-variant-numeric: tabular-nums; }
+    .beat { width: 14px; height: 14px; border-radius: 50%; background: var(--c); opacity: .12; transition: opacity .25s; margin-left: auto; }
+    .beat.on { opacity: 1; transition: none; }
+    canvas { display: block; width: 100%; height: 110px; background: var(--bg); border-radius: 6px; }
+    .range { display: flex; justify-content: space-between; color: var(--muted); font: 11px var(--mono); margin-top: 4px; }
+    .hint { color: var(--muted); font-size: 13px; margin-top: 8px; min-height: 1.4em; }
+    footer { padding: 0 16px 24px; color: var(--muted); font-size: 13px; }
+    footer code { font-family: var(--mono); }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>trackPrint · sensor check</h1>
+    <button id="connect" type="button">Connect Pi</button>
+    <button id="sim" type="button">Simulate</button>
+    <button id="stop" type="button" disabled>Stop</button>
+    <p id="status" role="status">Not connected.</p>
+  </header>
+  <main id="cards"></main>
+  <footer>
+    Normal with a finger on: raw sits steady between ~50,000 and ~250,000, the trace shows a regular pulse, and BPM settles within ~10 s.
+    Only one tab can hold the serial port, so close the main trackPrint page first.
+    The trace is auto-scaled: a flat line with a finger on means no pulse is being picked up. Press more gently or adjust the LED power in <code>pi/trackprint.py</code>.
+  </footer>
+
+  <script type="module">
+    import { connectSerial, startSim } from './serial.js';
+    import { createChannel, FINGER_MIN } from './signal.js';
+
+    const SENSORS = [
+      { name: 'Sensor 0', voice: 'drums', where: 'i2c-1 · pins 3/5' },
+      { name: 'Sensor 1', voice: 'bass', where: 'i2c-3 · pins 11/13' },
+      { name: 'Sensor 2', voice: 'lead', where: 'i2c-4 · pins 15/16' },
+      { name: 'Sensor 3', voice: 'pad', where: 'i2c-5 · pins 18/22' },
+    ];
+    const SAT = 262000;        // 18-bit ADC ceiling is 262143
+    const HISTORY = 50 * 6;    // 6 s of samples
+
+    const $ = (id) => document.getElementById(id);
+    const status = (text, state = '') => { $('status').textContent = text; $('status').dataset.state = state; };
+
+    const ui = SENSORS.map((s, i) => {
+      const el = document.createElement('section');
+      el.className = 'card';
+      el.style.setProperty('--c', `var(--c${i})`);
+      el.innerHTML = `
+        <div class="top"><h2>${s.name} <span class="where">${s.voice}</span></h2>
+          <span class="where">${s.where}</span><span class="pill">waiting</span></div>
+        <div class="nums"><span class="raw">-</span><span class="bpm">- bpm</span><span class="beat"></span></div>
+        <canvas></canvas><div class="range"><span class="lo"></span><span class="hi"></span></div>
+        <div class="hint"></div>`;
+      $('cards').append(el);
+      const q = (sel) => el.querySelector(sel);
+      return { el, pill: q('.pill'), raw: q('.raw'), bpm: q('.bpm'), beat: q('.beat'), canvas: q('canvas'),
+        lo: q('.lo'), hi: q('.hi'), hint: q('.hint'), buf: [], last: null, beatTimer: 0 };
+    });
+
+    let channels, stopSource = null, frames = 0, rateCount = 0, rate = 0, source = '';
+
+    function onFrame(f) {
+      frames++; rateCount++;
+      f.forEach((raw, i) => {
+        const c = ui[i];
+        const r = channels[i](raw);
+        c.last = { raw, ...r };
+        c.buf.push(raw);
+        if (c.buf.length > HISTORY) c.buf.shift();
+        if (r.beat) {
+          c.beat.classList.add('on');
+          clearTimeout(c.beatTimer);
+          c.beatTimer = setTimeout(() => c.beat.classList.remove('on'), 60);
+        }
+      });
+    }
+
+    function state(raw, where) {
+      if (raw === 0) return ['missing', 'not detected', `Pi reads nothing on ${where}. Check SDA/SCL, VIN, GND and the pull-up voltage.`];
+      if (raw >= SAT) return ['sat', 'saturated', 'Raw IR is at the ceiling. Lower LED power or ease finger pressure.'];
+      if (raw < FINGER_MIN) return ['nofinger', 'no finger', 'Sensor is alive. Place a fingertip on it.'];
+      return ['finger', 'finger on', ''];
+    }
+
+    function draw() {
+      for (const [i, c] of ui.entries()) {
+        if (!c.last) continue;
+        const [s, label, hint] = state(c.last.raw, SENSORS[i].where);
+        c.pill.dataset.s = s; c.pill.textContent = label;
+        c.hint.textContent = hint;
+        c.raw.textContent = c.last.raw.toLocaleString();
+        c.bpm.textContent = c.last.bpm ? `${Math.round(c.last.bpm)} bpm` : '- bpm';
+
+        const cv = c.canvas, dpr = devicePixelRatio || 1;
+        const w = cv.clientWidth * dpr, h = cv.clientHeight * dpr;
+        if (cv.width !== w || cv.height !== h) { cv.width = w; cv.height = h; }
+        const g = cv.getContext('2d');
+        g.clearRect(0, 0, w, h);
+        if (c.buf.length < 2) continue;
+        let lo = Infinity, hi = -Infinity;
+        for (const v of c.buf) { if (v < lo) lo = v; if (v > hi) hi = v; }
+        const span = Math.max(hi - lo, 50);  // don't blow up sensor noise into a fake waveform
+        const mid = (hi + lo) / 2;
+        g.strokeStyle = getComputedStyle(c.el).getPropertyValue('--c' + i) || '#fff';
+        g.lineWidth = 1.5 * dpr;
+        g.beginPath();
+        c.buf.forEach((v, k) => {
+          const x = (k / (HISTORY - 1)) * w;
+          const y = h / 2 - ((v - mid) / span) * (h - 8 * dpr);
+          k ? g.lineTo(x, y) : g.moveTo(x, y);
+        });
+        g.stroke();
+        c.lo.textContent = lo.toLocaleString();
+        c.hi.textContent = hi.toLocaleString();
+      }
+      requestAnimationFrame(draw);
+    }
+    requestAnimationFrame(draw);
+
+    setInterval(() => {
+      rate = rateCount; rateCount = 0;
+      if (stopSource) status(`${source} · ${rate} lines/s (expect 50) · ${frames.toLocaleString()} frames`, rate >= 45 ? 'live' : 'error');
+    }, 1000);
+
+    function reset() {
+      channels = SENSORS.map(() => createChannel(50));
+      frames = 0; rateCount = 0;
+      for (const c of ui) { c.buf = []; c.last = null; c.pill.dataset.s = ''; c.pill.textContent = 'waiting'; }
+    }
+    function running(on) {
+      $('connect').disabled = on || !('serial' in navigator);
+      $('sim').disabled = on;
+      $('stop').disabled = !on;
+    }
+    async function stop(msg = 'Stopped.') {
+      const s = stopSource; stopSource = null;
+      if (s) await s();
+      running(false);
+      status(msg);
+    }
+
+    $('connect').onclick = async () => {
+      reset();
+      try {
+        stopSource = await connectSerial(onFrame, () => { if (stopSource) stop('Pi disconnected. Check the USB cable, then Connect again.'); });
+        source = 'Pi serial'; running(true); status('Connected, waiting for data…', 'live');
+      } catch (e) {
+        status(e.name === 'NotFoundError' ? 'No port chosen.' : `Could not open the port: ${e.message}`, 'error');
+      }
+    };
+    $('sim').onclick = () => { reset(); stopSource = startSim(onFrame); source = 'Simulator'; running(true); };
+    $('stop').onclick = () => stop();
+
+    running(false);
+    if (!('serial' in navigator)) status('This browser has no Web Serial. Use Chrome or Edge. Simulate still works.', 'error');
+  </script>
+</body>
+</html>
