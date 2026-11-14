@@ -335,8 +335,37 @@ function lead(ctx, o) {
   const lp = add(new Tone.Filter({ type: 'lowpass', frequency: 2000, Q: 1 })).connect(head);
   head = lp;
   const glide = o.glide ?? 0;
-  let syn;
-  if (o.type === 'pluck') {
+  let syn, up, formants, vowel;
+  const bp = (f) => add(new Tone.Filter({ type: 'bandpass', frequency: f, Q: 6 })).connect(head);
+  if (o.type === 'talkbox') {
+    syn = add(new Tone.Synth({
+      oscillator: { type: 'fatsawtooth', count: 2, spread: 10 }, portamento: o.glide ?? 0.05,
+      envelope: { attack: 0.01, decay: 0.2, sustain: 0.7, release: 0.15 },
+    }));
+    formants = [bp(800), bp(1150)];
+    formants.forEach((f) => syn.connect(f));
+    vowel = (p, heart) => { // u o a e i; breath (exhale) opens to "a"
+      const v = heart.breath > 0.3 ? 2 : p.notes[0] % 5;
+      return [[325, 700], [450, 800], [800, 1150], [400, 1600], [300, 2300]][v];
+    };
+  } else if (o.type === 'chop') {
+    syn = add(new Tone.Synth({
+      oscillator: { type: 'square' },
+      envelope: { attack: 0.003, decay: 0.12, sustain: 0.2, release: 0.06 },
+    }));
+    formants = [bp(800), bp(1150)];
+    formants.forEach((f) => syn.connect(f));
+    let n = 0;
+    vowel = () => (n++ % 2 ? [450, 800] : [800, 1150]); // ah / oh
+  } else if (o.type === 'supersaw') {
+    const saw = (volume) => add(new Tone.Synth({
+      oscillator: { type: 'fatsawtooth', count: 7, spread: 40 }, portamento: o.glide ?? 0.02, volume,
+      envelope: { attack: 0.003, decay: 0.15, sustain: 0.6, release: 0.12 },
+    }));
+    syn = saw(0); up = saw(-8);
+    const drive = add(new Tone.Distortion({ distortion: 0.3, wet: 0.6 })).connect(head);
+    syn.connect(drive); up.connect(drive);
+  } else if (o.type === 'pluck') {
     syn = add(new Tone.PluckSynth({ attackNoise: 1.5, dampening: 4000, resonance: 0.97, release: 1.5 }));
   } else if (o.type === 'fm') {
     syn = add(new Tone.FMSynth({
@@ -351,20 +380,31 @@ function lead(ctx, o) {
       envelope: { attack: 0.005, decay: 0.2, sustain: 0.4, release: 0.3 },
     }));
   }
-  syn.connect(head);
+  if (!formants && !up) syn.connect(head);
   const dur = o.dur ?? '8n';
   return {
     play(p, heart, t) {
       const brightness = Math.min(8000, Math.max(500, hrExp(heart.hr, o.brightLo ?? 400, o.brightHi ?? 4000)));
       lp.frequency.setTargetAtTime(brightness, t, 0.1);
+      if (formants) {
+        const [a, b] = vowel(p, heart);
+        if (o.type === 'chop') { formants[0].frequency.setValueAtTime(a, t); formants[1].frequency.setValueAtTime(b, t); }
+        else { formants[0].frequency.setTargetAtTime(a, t, 0.04); formants[1].frequency.setTargetAtTime(b, t, 0.04); }
+      }
       syn.triggerAttackRelease(midi(p.notes[0]), p.duration ?? dur, t, p.velocity);
+      if (up) up.triggerAttackRelease(midi(p.notes[0] + 12), p.duration ?? dur, t, p.velocity);
+      if (o.type === 'chop') { // vocal scoop: start ~2 semitones sharp, settle in 40 ms (after trigger's own set)
+        const hz = Tone.Frequency(p.notes[0], 'midi').toFrequency();
+        syn.frequency.setValueAtTime(hz * 2 ** (2 / 12), t);
+        syn.frequency.exponentialRampToValueAtTime(hz, t + 0.04);
+      }
     },
     update(heart, t) {
       const brightness = Math.min(8000, Math.max(500, hrExp(heart.hr, o.brightLo ?? 400, o.brightHi ?? 4000)));
       lp.frequency.setTargetAtTime(brightness, t, 0.1);
       if (echoSend) echoSend.gain.setTargetAtTime(Math.min(1, Math.max(0, (o.echoBase ?? 0.2) + 0.15 * (heart.breath ?? 0))), t, 0.1);
     },
-    silence() { syn.triggerRelease(); },
+    silence() { syn.triggerRelease(); up?.triggerRelease(); },
   };
 }
 
@@ -381,6 +421,9 @@ const LEAD = {
     delay: { time: '4n', feedback: 0.25, send: -10 },
     verb: -10, level: -1,
   },
+  talkbox: { type: 'talkbox', glide: 0.05, delay: { pingpong: true, time: '8n.', feedback: 0.25, send: -12 }, verb: -12, level: -6 },
+  chop: { type: 'chop', delay: { time: '8n', feedback: 0.2, send: -14 }, verb: -10, level: -6 },
+  supersaw: { type: 'supersaw', glide: 0.02, verb: -16, level: -10 },
   pluck: {
     type: 'pluck', dur: '4n',
     delay: { pingpong: true, time: '4n.', feedback: 0.45, send: -6 },
@@ -521,7 +564,7 @@ export const KITS = {
     reverb: { decay: 2.5, preDelay: 0.02, wet: 0.8 },
     drums: { ...DRUMS.disco, brightness: 10500 },
     bass: BASS.pluck,
-    lead: { ...LEAD.square, brightLo: 700, brightHi: 5200, echoBase: 0.24 },
+    lead: { ...LEAD.talkbox, brightLo: 1200, brightHi: 6000, echoBase: 0.18 },
     pad: { ...PAD.discoStab, filterLo: 600, filterHi: 4000 },
   }),
   // Dusty and warm: whole kit low-passed at 4.5 kHz, crushed drums,
@@ -532,7 +575,7 @@ export const KITS = {
     reverb: { decay: 2, preDelay: 0.01, wet: 0.75 },
     drums: { ...DRUMS.crisp, brightness: 8500 },
     bass: BASS.rubber,
-    lead: { ...LEAD.keys, brightLo: 900, brightHi: 4300, echoBase: 0.14 },
+    lead: { ...LEAD.chop, brightLo: 1500, brightHi: 6500, echoBase: 0.12 },
     pad: { ...PAD.organ, filterLo: 800, filterHi: 4500 },
   }),
   // Slow and spacious: soft brushed drums in an 8 s room, round bass,
@@ -551,7 +594,7 @@ export const KITS = {
     reverb: { decay: 1, preDelay: 0.01, wet: 0.4 },
     drums: { ...DRUMS.hard, brightness: 12500 },
     bass: BASS.pump,
-    lead: { ...LEAD.square, brightLo: 1100, brightHi: 6500, echoBase: 0.08, level: -6 },
+    lead: { ...LEAD.supersaw, brightLo: 2000, brightHi: 8000 },
     pad: { ...PAD.rave, filterLo: 900, filterHi: 5000 },
   }),
 };

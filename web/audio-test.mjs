@@ -165,6 +165,7 @@ test('kit boundaries expose four bounded, disposable, duration-aware kits', () =
     setTargetAtTime(value, time, constant) { automation.push({ method: 'target', value, time, constant, node: this.node }); this.value = value; }
     linearRampToValueAtTime(value, time) { automation.push({ method: 'ramp', value, time, node: this.node }); this.value = value; }
     rampTo(value, duration, time) { automation.push({ method: 'rampTo', value, duration, time, node: this.node }); this.value = value; }
+    exponentialRampToValueAtTime(value, time) { automation.push({ method: 'expRamp', value, time, node: this.node }); this.value = value; }
   }
   class Node {
     constructor(options = {}) {
@@ -192,7 +193,7 @@ test('kit boundaries expose four bounded, disposable, duration-aware kits', () =
   }
   const ctor = function (options) { return new Node(options); };
   const Tone = new Proxy({
-    Frequency: (value) => ({ toNote: () => `midi:${value}` }),
+    Frequency: (value) => ({ toNote: () => `midi:${value}`, toFrequency: () => 440 }),
     dbToGain: () => 1,
   }, { get(target, key) {
     if (key in target) return target[key];
@@ -227,6 +228,14 @@ test('kit boundaries expose four bounded, disposable, duration-aware kits', () =
       // the rim's own MembraneSynth: pitchDecay 0.005 and a very short decay (the clap's 0.01 decay has no pitchDecay)
       assert.ok(nodes.slice(start).some((n) => n.options.pitchDecay === 0.005 && n.options.envelope?.decay <= 0.04), 'rim node built');
     }
+    if (name === 'French house') {
+      kit.lead({ notes: [60], duration: 0.2, velocity: 0.7 }, { hr: 85, press: 0.5, breath: 1 }, 7);
+      assert.ok(automation.some((a) => a.time === 7 && a.method === 'target' && a.value >= 700 && a.value <= 900), 'talkbox opens to "a" F1 on exhale');
+    }
+    if (name === 'UK garage') {
+      kit.lead({ notes: [60], duration: 0.2, velocity: 0.7 }, hearts.lead, 8);
+      assert.ok(automation.some((a) => a.method === 'expRamp' && a.time > 8 && a.time <= 8.05), 'chop pitch drops into the note');
+    }
     kit.update(hearts, 4, 0);
     kit.update(hearts, 5, 4);
     const dip = Math.min(...automation.slice(autoStart).filter((a) => a.method === 'ramp' && a.time === 4.03).map((a) => a.value));
@@ -256,6 +265,7 @@ test('live kit controls smooth real nodes and remain neutral before heart settle
     setTargetAtTime(value, time, constant) { automation.push({ method: 'target', value, time, constant, node: this.node }); this.value = value; }
     linearRampToValueAtTime(value, time) { automation.push({ method: 'ramp', value, time, node: this.node }); this.value = value; }
     rampTo(value, duration, time) { automation.push({ method: 'rampTo', value, duration, time, node: this.node }); this.value = value; }
+    exponentialRampToValueAtTime(value, time) { automation.push({ method: 'expRamp', value, time, node: this.node }); this.value = value; }
   }
   class Node {
     constructor(options = {}) {
@@ -282,7 +292,7 @@ test('live kit controls smooth real nodes and remain neutral before heart settle
   }
   const ctor = function (options) { return new Node(options); };
   const Tone = new Proxy({
-    Frequency: (value) => ({ toNote: () => `midi:${value}` }),
+    Frequency: (value) => ({ toNote: () => `midi:${value}`, toFrequency: () => 440 }),
     dbToGain: () => 1,
   }, { get(target, key) {
     if (key in target) return target[key];
