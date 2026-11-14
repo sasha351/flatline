@@ -72,6 +72,15 @@ sudo systemctl start trackprint
 ```
 A value jumps above ~45000 with a finger on (the app counts anything over 30000 as a finger).
 
+### Display
+`pi/oled.py` drives a 128x64 SH1106 OLED (I2C `0x3C`) with one spiky ball per finger, each with its own fill pattern: drums solid, bass checker, lead stripes, pad dots. Each ball's spikes shoot out on its notes, and the browser sends `n,voice,drum,velocity` lines back over the same serial port for that. With no note for 2 s (the browser isn't playing), the spikes follow heartbeats instead. When every present sensor has a finger and at least `MIN_MERGE` (2) are on, the balls slide together into one ball. `trackprint.py` starts it in a separate process; if the display is missing, the sensor output is unaffected and it retries every 5 s.
+
+Wire it to pins 1 (3.3V), 6 (GND), 3 (SDA) and 5 (SCL), the same I2C bus as sensor 0. `setup.sh` also sets the bus to 400 kHz. For a test without sensors (stop the service first, like the stdout test above):
+```bash
+sudo systemctl stop trackprint && python3 /opt/trackprint/oled.py --demo   # simulated fingers and notes; Ctrl+C stops
+```
+`CHIP = 'sh1106'` at the top of `oled.py` is the knob: set `'ssd1306'` for that controller.
+
 **Tuning the signal, no restart** (over ssh, as `flatline`, no sudo):
 ```bash
 echo led=0x3F > ~/trackprint.conf && pkill -HUP -f trackprint.py   # LED power 0x00-0x7F; raise it if the signal is weak, lower it if raw IR saturates near 262143. Kept across restarts.

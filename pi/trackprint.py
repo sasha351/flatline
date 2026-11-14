@@ -13,7 +13,9 @@ Tuning without a restart (as the service's user, no sudo):
   pkill -USR1 -f trackprint.py    # write the last 30 s of red and IR, per sensor, to /tmp/trackprint-dump.csv
 """
 import collections
+import multiprocessing
 import os
+import queue
 import signal
 import sys
 import termios
@@ -186,6 +188,7 @@ class Out:
     def __init__(self, path):
         self.path = path
         self.fd = None
+        self.rbuf = b''
 
     def write(self, line):
         if self.path == '-':
@@ -201,9 +204,28 @@ class Out:
         except BlockingIOError:
             pass  # host isn't reading; drop this frame
         except (OSError, termios.error):
-            if self.fd is not None:
-                os.close(self.fd)
-            self.fd = None  # gadget not up yet or unplugged; reopen next frame
+            self.reset()  # gadget not up yet or unplugged; reopen next frame
+
+    def reset(self):
+        if self.fd is not None:
+            os.close(self.fd)
+        self.fd = None
+
+    def read_lines(self):
+        """Complete lines the host wrote to the port (note events), without blocking."""
+        if self.fd is None:
+            return []
+        try:
+            data = os.read(self.fd, 4096)
+        except BlockingIOError:
+            return []
+        except OSError:
+            self.reset()
+            return []
+        self.rbuf += data
+        *lines, self.rbuf = self.rbuf.split(b'\n')
+        self.rbuf = self.rbuf[-256:]  # a partial line never grows without bound
+        return [l.decode(errors='replace') for l in lines]
 
 
 def main():
@@ -212,11 +234,32 @@ def main():
     sensors = [Sensor(n) for n in BUSES]
     signal.signal(signal.SIGHUP, load_conf)
     signal.signal(signal.SIGUSR1, lambda *_: dump(sensors))
+    q = None
+    try:  # the display runs in its own process, started before the threads so fork copies a quiet process
+        import oled
+        q = multiprocessing.Queue(maxsize=100)
+        multiprocessing.Process(target=oled.run, args=(q,), daemon=True).start()
+    except Exception as e:
+        log(f'no display: {e}')
+        q = None
     for s in sensors:
         threading.Thread(target=s.run, daemon=True).start()
     nxt = time.monotonic()
     while True:
-        out.write(','.join(str(s.take()) for s in sensors) + '\n')
+        vals = tuple(s.take() for s in sensors)
+        out.write(','.join(map(str, vals)) + '\n')
+        if q:
+            try:
+                q.put_nowait(vals)
+                for line in out.read_lines():  # browser note lines: n,voice,drum,velocity
+                    if line.startswith('n,'):
+                        try:
+                            _, v, drum, vel = line.split(',')
+                            q.put_nowait(('n', int(v), drum, float(vel)))
+                        except ValueError:
+                            pass  # bad line: skip
+            except queue.Full:
+                pass
         nxt += PERIOD
         delay = nxt - time.monotonic()
         if delay > 0:

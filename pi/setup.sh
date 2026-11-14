@@ -27,6 +27,8 @@ fi
 # Weak internal pull-ups on the bit-banged pins: an empty bus then fails fast
 # instead of hanging on clock-stretch timeouts. Breakout pull-ups still dominate.
 grep -q '^gpio=17,22-25,27=pu' "$CONFIG" || echo 'gpio=17,22-25,27=pu' >> "$CONFIG"
+# The OLED shares i2c-1 with sensor 0. At 400 kHz instead of the default 100 kHz, each frame write takes about a quarter of the time.
+grep -q '^dtparam=i2c_arm_baudrate=' "$CONFIG" || echo 'dtparam=i2c_arm_baudrate=400000' >> "$CONFIG"
 
 grep -q 'modules-load=dwc2,g_serial' "$CMDLINE" ||
   sed -i '1 s/$/ modules-load=dwc2,g_serial/' "$CMDLINE"
@@ -35,6 +37,7 @@ usermod -aG i2c,dialout "$USER_NAME"
 
 install -d /opt/trackprint
 install -m 755 trackprint.py /opt/trackprint/trackprint.py
+install -m 755 oled.py /opt/trackprint/oled.py
 sed "s/^User=.*/User=$USER_NAME/" trackprint.service > /etc/systemd/system/trackprint.service
 systemctl daemon-reload
 systemctl enable trackprint.service

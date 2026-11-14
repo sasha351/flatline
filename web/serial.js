@@ -1,5 +1,7 @@
 // Frame sources. Each calls onFrame([ir0, ir1, ir2, ir3]) ~50x/s.
+// The port also carries note lines back to the Pi (n,voice,drum,velocity) so its display can follow the music.
 import { FINGER_MIN } from './signal.js';
+import { on, VOICES } from './bus.js';
 
 export function parseLine(line) {
   const t = line.trim();
@@ -11,9 +13,25 @@ export function parseLine(line) {
 export const PI_GADGET = { usbVendorId: 0x0525, usbProductId: 0xa4a7 };
 const anyPort = () => new URLSearchParams(globalThis.location?.search).get('port') === 'any';
 
+let writer = null, busy = false, listening = false;
+function sendNote(n) {
+  const voice = VOICES.indexOf(n.voice);
+  if (!writer || busy || voice < 0) return; // a write still pending: drop the note rather than queue
+  busy = true;
+  const line = `n,${voice},${n.drum ?? ''},${(Number(n.velocity) || 0.8).toFixed(2)}\n`;
+  writer.write(new TextEncoder().encode(line)).catch(() => {}).finally(() => { busy = false; });
+}
+function dropWriter() {
+  try { writer?.releaseLock(); } catch {}
+  writer = null;
+  busy = false;
+}
+
 export async function connectSerial(onFrame, onClose) {
   const port = await navigator.serial.requestPort(anyPort() ? {} : { filters: [PI_GADGET] });
   await port.open({ baudRate: 115200 }); // ignored by the gadget; the Arduino sketches use it
+  writer = port.writable.getWriter();
+  if (!listening) { listening = true; on('note', sendNote); } // on() has no unsubscribe: register once
   const decoder = new TextDecoderStream();
   const piped = port.readable.pipeTo(decoder.writable).catch(() => {});
   const reader = decoder.readable.getReader();
@@ -35,12 +53,14 @@ export async function connectSerial(onFrame, onClose) {
     } catch {
       // device unplugged
     }
+    dropWriter();
     onClose();
   })();
 
   return async () => {
     await reader.cancel().catch(() => {});
     await piped;
+    dropWriter();
     await port.close().catch(() => {});
   };
 }
