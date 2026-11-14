@@ -304,12 +304,16 @@ test('live kit controls smooth real nodes and remain neutral before heart settle
   assert.equal(automation.some((a) => a.method === 'property' && a.value !== 0), false, 'bass grit stays neutral before settled');
   const settledHearts = Object.fromEntries(Object.entries(hearts).map(([voice, heart]) => [voice, { ...heart, settled: true }]));
   kit.update(settledHearts, 11, 1);
-  assert.ok(automation.some((a) => a.method === 'target' && a.node?.options?.modulationIndex != null && a.constant === 0.1), 'FM modulation is smoothed');
+  const garage = env.KITS['UK garage'](new Node());
+  garage.update(settledHearts, 11, 1);
+  assert.ok(automation.some((a) => a.method === 'target' && a.node?.options?.modulation?.type === 'square' && a.constant === 0.1 && a.value >= 1 && a.value <= 4), 'FM modulation is smoothed (rubber layer)');
   const mono = env.KITS['French house'](new Node());
   mono.update(settledHearts, 11, 1);
   assert.ok(automation.some((a) => a.method === 'target' && a.node?.options?.filter != null && a.constant === 0.1), 'MonoSynth filter is smoothed');
+  const first = nodes.length;
   const house = env.KITS['French house'](new Node());
-  const motion = nodes.find((node) => node.options.frequency === 0.08);
+  const motion = nodes.slice(first).find((node) => node.options.frequency === 0.06);
+  assert.ok(motion, 'house pad has motion filter');
   house.update(settledHearts, 12, 1);
   assert.ok(automation.some((a) => a.node === motion && a.method === 'rampTo' && a.duration === 0.1), 'pad texture balance targets the effect node');
 });

@@ -229,7 +229,17 @@ function bass(ctx, o) {
   const character = add(new Tone.Filter({ type: 'lowpass', frequency: o.filter ?? 900, Q: o.q ?? 2 })).connect(bus);
   const glide = o.glide ?? 0;
   let syn, setTone = () => {};
-  if (o.type === 'fm') {
+  const layers = []; // extra voices triggered with the main one
+  if (o.type === 'rubber') {
+    const env = { attack: 0.003, decay: 0.2, sustain: 0.3, release: 0.15 };
+    syn = add(new Tone.Synth({ oscillator: { type: 'sine' }, portamento: glide, envelope: env }));
+    const fm = add(new Tone.FMSynth({
+      harmonicity: 1, modulationIndex: 2, modulation: { type: 'square' },
+      portamento: glide, envelope: env, volume: -10,
+    }));
+    layers.push(fm);
+    setTone = (hr, t) => fm.modulationIndex.setTargetAtTime(hrLin(hr, 1, 4), t, 0.1);
+  } else if (o.type === 'fm') {
     syn = add(new Tone.FMSynth({
       harmonicity: o.harmonicity ?? 1, modulationIndex: 4, portamento: glide,
       modulation: { type: o.mod ?? 'square' },
@@ -246,7 +256,8 @@ function bass(ctx, o) {
     }));
   } else {
     syn = add(new Tone.MonoSynth({
-      oscillator: { type: o.osc ?? 'sawtooth' }, portamento: glide,
+      oscillator: String(o.osc).startsWith('fat') ? { type: o.osc, count: 3, spread: 25 } : { type: o.osc ?? 'sawtooth' },
+      portamento: glide,
       filter: { type: 'lowpass', Q: o.q ?? 2, rolloff: -24 },
       envelope: { attack: 0.005, decay: 0.3, sustain: 0.6, release: 0.25 },
       filterEnvelope: { attack: 0.005, decay: 0.25, sustain: 0.25, release: 0.3, baseFrequency: 150, octaves: o.octaves ?? 2.5 },
@@ -262,11 +273,13 @@ function bass(ctx, o) {
   // make up 10 dB after: unity when dry, gentle saturation and similar level when wet.
   const post = gain(add, 10).connect(character);
   const dist = add(new Tone.Distortion({ distortion: 0, wet: 0, oversample: '2x' })).connect(post);
-  syn.connect(gain(add, -10).connect(dist));
-  const sub = o.sub == null ? null : add(new Tone.Synth({
+  const drive = gain(add, -10).connect(dist);
+  syn.connect(drive);
+  if (o.type === 'rubber') layers[0].connect(drive);
+  if (o.sub != null) layers.push(add(new Tone.Synth({
     oscillator: { type: 'sine' }, portamento: glide,
     envelope: { attack: 0.005, decay: 0.2, sustain: 0.8, release: 0.25 }, volume: o.sub,
-  })).connect(bus);
+  })).connect(bus));
   const dur = o.dur ?? '8n';
   const update = (heart, t) => {
     const grit = heart?.settled
@@ -282,10 +295,10 @@ function bass(ctx, o) {
       update(heart, t);
       const length = p.duration ?? dur;
       syn.triggerAttackRelease(n, length, t, p.velocity);
-      sub?.triggerAttackRelease(n, length, t, 0.5 + 0.5 * p.velocity);
+      for (const l of layers) l.triggerAttackRelease(n, length, t, 0.5 + 0.5 * p.velocity);
     },
     update,
-    silence() { syn.triggerRelease(); sub?.triggerRelease(); },
+    silence() { syn.triggerRelease(); layers.forEach((l) => l.triggerRelease()); },
   };
 }
 
@@ -293,6 +306,9 @@ const BASS = {
   saw: { type: 'mono', osc: 'sawtooth', glide: 0.03, sub: -8, level: -9 },
   fm: { type: 'fm', harmonicity: 1, glide: 0.02, sub: -10, level: -2 },
   soft: { type: 'soft', osc: 'triangle', glide: 0.08, dur: '4n', level: -6, grit: 0.4 },
+  pluck: { type: 'mono', osc: 'square', glide: 0, level: -8, dur: '16n', octaves: 3, filterLo: 250, filterHi: 1200, q: 4 },
+  rubber: { type: 'rubber', glide: 0.06, level: -4, dur: '16n', filter: 900 },
+  pump: { type: 'mono', osc: 'fatsawtooth', glide: 0, level: -6, dur: '16n', octaves: 4, filterLo: 300, filterHi: 1400, q: 3, grit: 1.2 },
 };
 
 // ---------------------------------------------------------------- lead
@@ -396,14 +412,14 @@ function pad(ctx, o) {
   const lp = add(new Tone.Filter({ type: 'lowpass', frequency: 1200, rolloff: -12 })).connect(head);
   const hp = add(new Tone.Filter({ type: 'highpass', frequency: 180 })).connect(lp);
 
-  const env = { attack: o.attack ?? 1.5, decay: 1, sustain: 0.8, release: o.release ?? 3 };
+  const env = { attack: o.attack ?? 1.5, decay: o.decay ?? 1, sustain: o.sustain ?? 0.8, release: o.release ?? 3 };
   let syn;
   if (o.type === 'am') {
     syn = new Tone.PolySynth(Tone.AMSynth, { harmonicity: 2, modulation: { type: 'triangle' }, envelope: env });
   } else if (o.type === 'fm') {
     syn = new Tone.PolySynth(Tone.FMSynth, { harmonicity: 2, modulationIndex: 1.5, envelope: env });
   } else {
-    const oscillator = o.spread ? { type: o.osc, count: 3, spread: o.spread } : { type: o.osc ?? 'triangle' };
+    const oscillator = typeof o.osc === 'object' ? o.osc : o.spread ? { type: o.osc, count: 3, spread: o.spread } : { type: o.osc ?? 'triangle' };
     syn = new Tone.PolySynth(Tone.Synth, { oscillator, envelope: env });
   }
   add(syn).connect(hp);
@@ -438,6 +454,18 @@ const PAD = {
     osc: 'fattriangle', spread: 30, attack: 3, release: 5, hold: 3,
     phaser: true, motion: 0.05,
     verb: 0, level: -20,
+  },
+  discoStab: {
+    osc: 'fatsawtooth', spread: 20, attack: 0.005, release: 0.25, hold: 0.25, decay: 0.15, sustain: 0.4,
+    phaser: true, chorus: { rate: 0.8, depth: 0.4 }, motion: 0.06, verb: -10, level: -12,
+  },
+  organ: {
+    osc: { type: 'custom', partials: [1, 0.6, 0.3, 0.2, 0.1] }, attack: 0.003, release: 0.12, hold: 0.15, decay: 0.15, sustain: 0.4,
+    chorus: { rate: 1.5, depth: 0.3 }, verb: -12, level: -10,
+  },
+  rave: {
+    osc: 'fatsawtooth', spread: 35, attack: 0.003, release: 0.3, hold: 0.3, decay: 0.15, sustain: 0.4,
+    verb: -14, level: -14,
   },
 };
 
@@ -492,9 +520,9 @@ export const KITS = {
     pump: true,
     reverb: { decay: 2.5, preDelay: 0.02, wet: 0.8 },
     drums: { ...DRUMS.disco, brightness: 10500 },
-    bass: { ...BASS.saw, filter: 1100, filterLo: 180, filterHi: 850, dur: '8n' },
+    bass: BASS.pluck,
     lead: { ...LEAD.square, brightLo: 700, brightHi: 5200, echoBase: 0.24 },
-    pad: { ...PAD.saw, filterLo: 500, filterHi: 2600, hold: 1.5 },
+    pad: { ...PAD.discoStab, filterLo: 600, filterHi: 4000 },
   }),
   // Dusty and warm: whole kit low-passed at 4.5 kHz, crushed drums,
   // FM bass, wobbly electric-piano lead, soft AM pad.
@@ -503,9 +531,9 @@ export const KITS = {
     pump: 0.8,
     reverb: { decay: 2, preDelay: 0.01, wet: 0.75 },
     drums: { ...DRUMS.crisp, brightness: 8500 },
-    bass: { ...BASS.fm, filter: 700, fmLo: 1.2, fmHi: 5.5, dur: '16n', level: -5 },
+    bass: BASS.rubber,
     lead: { ...LEAD.keys, brightLo: 900, brightHi: 4300, echoBase: 0.14 },
-    pad: { ...PAD.warm, filterLo: 450, filterHi: 2200, hold: 1.25 },
+    pad: { ...PAD.organ, filterLo: 800, filterHi: 4500 },
   }),
   // Slow and spacious: soft brushed drums in an 8 s room, round bass,
   // plucks echoing on dotted quarters, airy pad.
@@ -522,8 +550,8 @@ export const KITS = {
     pump: true,
     reverb: { decay: 1, preDelay: 0.01, wet: 0.4 },
     drums: { ...DRUMS.hard, brightness: 12500 },
-    bass: { ...BASS.fm, filter: 1500, fmLo: 3, fmHi: 10, dur: '16n', grit: 0.8, level: -4 },
+    bass: BASS.pump,
     lead: { ...LEAD.square, brightLo: 1100, brightHi: 6500, echoBase: 0.08, level: -6 },
-    pad: { ...PAD.warm, filterLo: 700, filterHi: 3500, hold: 1.2, level: -9 },
+    pad: { ...PAD.rave, filterLo: 900, filterHi: 5000 },
   }),
 };
