@@ -90,9 +90,9 @@ export function startSim(onFrame) {
   return () => clearInterval(id);
 }
 
-// ponytail: sensor 4 is broken for now, so it is simulated unless the page says otherwise.
-// Set this to [] when it is fixed. ?sim=3,4 picks other sensors; ?sim=none simulates nothing.
-export const BROKEN_SENSORS = [4];
+// ponytail: sensors simulated unless the page says otherwise; add a number here if one breaks.
+// ?sim=3,4 picks sensors to simulate; ?sim=none simulates nothing.
+export const BROKEN_SENSORS = [];
 // Sensor numbers (as on screen) -> channel indexes to simulate.
 export function simSensors(search = globalThis.location?.search ?? '', count = 4) {
   const q = new URLSearchParams(search).get('sim');

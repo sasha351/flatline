@@ -91,7 +91,7 @@ pkill -USR1 -f trackprint.py                                       # write the l
 ```bash
 python3 tools/pulse_meter.py
 ```
-Every 2 s it pulls the last 8 s of red + IR over ssh and prints, per sensor, the signal level, pulse size, rhythm, IR/red ratio and shake, with a verdict (`GOOD pulse, 72 BPM`, `MOVING: hold still`, ...). Use it to find the right LED power and finger pressure. It covers sensors 1-3, since sensor 4 is broken. Ctrl+C stops it.
+Every 2 s it pulls the last 8 s of red + IR over ssh and prints, per sensor, the signal level, pulse size, rhythm, IR/red ratio and shake, with a verdict (`GOOD pulse, 72 BPM`, `MOVING: hold still`, ...). Use it to find the right LED power and finger pressure. Ctrl+C stops it.
 
 Connect the Pi's **USB** port (not PWR IN) to the laptop. That one cable powers the Pi and carries the data. The Pi takes about 30 s to boot, and then it shows up as a serial port (`/dev/cu.usbmodem*` on a Mac). Shut it down with `sudo poweroff` before unplugging, so the SD card doesn't get corrupted.
 
@@ -120,7 +120,7 @@ Not all four sensors wired yet? Open http://localhost:8000/?fill=sim and use **C
 
 **Save log / analyze.** **Save log** downloads a CSV of every reading since connecting. Replay it through the real beat detector with `node tools/analyze-log.mjs ~/Downloads/flatline-log-*.csv`.
 
-**Broken sensor.** Sensor 4 doesn't work right now, so the app simulates it by default (`BROKEN_SENSORS` in `web/serial.js`; set it to `[]` once it's fixed). A simulated sensor plays a heartbeat whenever every working sensor has a finger on it, so the four can still merge. `?sim=3,4` picks other sensors to simulate; `?sim=none` simulates nothing. Logs note which sensors were simulated and the analyzer skips them.
+**Broken sensor.** List a dead sensor in `BROKEN_SENSORS` in `web/serial.js` and the app simulates it. A simulated sensor plays a heartbeat whenever every working sensor has a finger on it, so the four can still merge. `?sim=3,4` picks other sensors to simulate; `?sim=none` simulates nothing. Logs note which sensors were simulated and the analyzer skips them.
 
 ## Testing with one sensor (legacy Arduino)
 `firmware/trackprint_single` is for testing with a single MAX30102 wired straight to the Uno, without the mux: SDA → A4, SCL → A5, VIN → 3.3V, GND → GND. It sends the same `ir0,ir1,ir2,ir3` lines as the full firmware. The real reading goes on `CHANNEL` (default 0, drums, so your finger sets the tempo) and the other channels send `0`.

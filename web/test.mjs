@@ -291,7 +291,7 @@ console.log('dynamics ok');
   for (let i = 0; i < 50 * 20; i++) { f([60000, 70000, 80000, 0]); bpm = chan(out.at(-1)[3]).bpm; }
   assert.ok(bpm > 50 && bpm < 66, `sim pad bpm ${bpm}`);
 }
-assert.deepEqual(simSensors(''), [3]);            // sensor 4 is broken for now: simulated by default
+assert.deepEqual(simSensors(''), []);             // every sensor works: nothing simulated by default
 assert.deepEqual(simSensors('?sim=none'), []);
 assert.deepEqual(simSensors('?sim=2,4,9'), [1, 3]);
 console.log('simChannels ok');

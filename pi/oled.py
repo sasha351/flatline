@@ -24,7 +24,7 @@ CHIP = 'sh1106'   # or 'ssd1306'; same page addressing, the SH1106 glass is offs
 ADDR, BUS = 0x3C, 1
 FPS = 15          # ponytail: frames per second; each full frame is ~1 KB over the shared I2C bus, so lower it if sensor 0 stutters
 RETRY = 5.0       # seconds between attempts to (re)init a missing panel
-# ponytail: sensor 3 is currently broken and reads 0, so "all four fingers on" can never happen yet.
+# ponytail: a missing sensor reads 0 and is skipped, so the rest can still merge.
 # Merge when every PRESENT sensor has a finger and at least this many do.
 MIN_MERGE = 2
 NOTE_HOLD = 2.0   # seconds after a note during which heartbeats do not fire spikes
