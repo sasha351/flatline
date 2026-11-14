@@ -208,9 +208,11 @@ test('kit boundaries expose four bounded, disposable, duration-aware kits', () =
     lead: { hr: 85, press: 0.5, breath: 0 },
     pad: { hr: 70, press: 0.5, breath: 0 },
   };
+  const dips = {};
   for (const name of names) {
     const out = new Node();
     const start = nodes.length;
+    const autoStart = automation.length;
     const kit = env.KITS[name](out);
     for (const method of ['drums', 'bass', 'lead', 'pad', 'update', 'lift', 'silence', 'dispose']) {
       assert.equal(typeof kit[method], 'function', `${name}.${method}`);
@@ -220,8 +222,15 @@ test('kit boundaries expose four bounded, disposable, duration-aware kits', () =
     kit.pad({ notes: [45, 49, 52], duration: 3.5, velocity: 0.6 }, hearts.pad, 3);
     const noteTriggers = triggers.filter(({ args }) => args.some((arg) => arg === 1.75 || arg === 2.25 || arg === 3.5));
     assert.ok(noteTriggers.length >= 3, `${name} forwards note durations`);
+    for (const drum of ['kick', 'snare', 'clap', 'hat', 'openhat', 'rim']) kit.drums({ drum, velocity: 0.7 }, hearts.drums, 6);
+    if (name === 'UK garage') {
+      // the rim's own MembraneSynth: pitchDecay 0.005 and a very short decay (the clap's 0.01 decay has no pitchDecay)
+      assert.ok(nodes.slice(start).some((n) => n.options.pitchDecay === 0.005 && n.options.envelope?.decay <= 0.04), 'rim node built');
+    }
     kit.update(hearts, 4, 0);
     kit.update(hearts, 5, 4);
+    const dip = Math.min(...automation.slice(autoStart).filter((a) => a.method === 'ramp' && a.time === 4.03).map((a) => a.value));
+    dips[name] = dip;
     if (name === 'French house') {
       assert.ok(automation.some((a) => a.time === 4 && a.value < 1), 'house beat dip');
       assert.ok(automation.some((a) => a.time === 4 && a.value >= 0.9), 'house recovery');
@@ -229,6 +238,8 @@ test('kit boundaries expose four bounded, disposable, duration-aware kits', () =
     kit.dispose();
     nodes.slice(start).forEach((node) => assert.equal(node.disposals, 1, 'every kit node disposed once'));
   }
+  for (const n of ['French house', 'UK garage', 'Russian hardbass']) assert.ok(dips[n] < 1, `${n} ducks`);
+  assert.ok(dips['UK garage'] > dips['French house'], 'UKG dip shallower than house');
   for (const entry of automation) {
     assert.ok(Number.isFinite(entry.value) && entry.value >= 0 && entry.value <= 18000, 'automation bounded');
   }

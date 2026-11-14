@@ -101,6 +101,14 @@ function drums(ctx, o) {
     hatHit = (decay, t, v) => { hat.envelope.decay = decay; hat.triggerAttackRelease(300, 0.02, t, v); };
   }
 
+  // rim
+  const rimBp = add(new Tone.Filter({ type: 'bandpass', frequency: 1800, Q: 2 })).connect(bus);
+  const rim = add(new Tone.MembraneSynth({
+    pitchDecay: 0.005, octaves: 1,
+    envelope: { attack: 0.001, decay: o.rim?.decay ?? 0.03, sustain: 0, release: 0.01 },
+    volume: o.rim?.volume ?? -10,
+  })).connect(rimBp);
+
   // tom
   const tom = add(new Tone.MembraneSynth({
     pitchDecay: 0.06, octaves: 2,
@@ -133,6 +141,9 @@ function drums(ctx, o) {
         [0, 0.011, 0.022].forEach((k) => clap.triggerAttackRelease(0.005, t + k, v));
         clap.envelope.decay = 0.16;
         clap.triggerAttackRelease(0.01, t + 0.033, v);
+        break;
+      case 'rim':
+        rim.triggerAttackRelease(o.rim?.note ?? 'D5', 0.02, t, v);
         break;
       case 'tom':
         tom.triggerAttackRelease(o.tom?.note ?? 'E2', 0.1, t, v);
@@ -176,6 +187,31 @@ const DRUMS = {
     hat: { kind: 'noise', closed: 0.09, open: 0.6, hp: 8000, lp: 14000, volume: -16 },
     clap: { volume: -14, freq: 1500 },
     tom: { note: 'E2', volume: -8 },
+  },
+  // French house: tight four-on-the-floor kick, big filtered-disco clap, quiet hats.
+  disco: {
+    level: -6, verb: -18,
+    kick: { note: 'G1', pitchDecay: 0.04, octaves: 4, decay: 0.3, click: -12, drive: 0.15 },
+    snare: { body: 'E3', bodyDecay: 0.1, hp: 1800, lp: 9000, decay: 0.15, volume: -12 },
+    clap: { freq: 1300, volume: -2 },
+    hat: { kind: 'noise', closed: 0.03, open: 0.25, hp: 8000, volume: -16 },
+  },
+  // UK garage: dry, snappy kit with a metal hat and a rim.
+  crisp: {
+    level: -6, verb: -18,
+    kick: { note: 'F1', pitchDecay: 0.03, octaves: 4, decay: 0.35, click: -10, drive: 0.3 },
+    snare: { body: 'D3', bodyDecay: 0.09, noise: 'white', hp: 2000, lp: 10000, decay: 0.14 },
+    clap: { freq: 1400 },
+    hat: { kind: 'metal', closed: 0.025, open: 0.2, hp: 9000, volume: -18 },
+    rim: { note: 'D5', volume: -12 },
+  },
+  // Hardbass: long distorted kick, loud clap, hats kept low (openhat cells are full weight).
+  hard: {
+    level: -3,
+    kick: { note: 'A1', pitchDecay: 0.06, octaves: 6, decay: 0.7, click: -8, drive: 0.9, volume: 0 },
+    snare: { body: 'E3', bodyDecay: 0.1, hp: 1800, lp: 9000, decay: 0.15, volume: -12 },
+    clap: { freq: 1000, volume: 0 },
+    hat: { kind: 'noise', closed: 0.03, open: 0.18, hp: 7000, volume: -22 },
   },
 };
 
@@ -412,6 +448,7 @@ function makeKit(spec) {
     const add = (n) => (nodes.push(n), n);
     const dest = spec.bus ? spec.bus(add, out) : out;
     const verb = add(new Tone.Reverb(spec.reverb)).connect(dest);
+    const depth = spec.pump === true ? 0.62 : spec.pump;
     const pump = spec.pump ? add(new Tone.Gain(1)).connect(dest) : null;
     const voiceDest = pump ?? dest;
     const ctx = { add, dest: voiceDest, verb };
@@ -432,7 +469,7 @@ function makeKit(spec) {
         if (pump) {
           pump.gain.setValueAtTime(1, t);
           if (stepInBar % 4 === 0) {
-            pump.gain.linearRampToValueAtTime(0.62, t + 0.03);
+            pump.gain.linearRampToValueAtTime(depth, t + 0.03);
             pump.gain.linearRampToValueAtTime(1, t + 0.18);
           }
         }
@@ -454,7 +491,7 @@ export const KITS = {
     tail: 5,
     pump: true,
     reverb: { decay: 2.5, preDelay: 0.02, wet: 0.8 },
-    drums: { ...DRUMS.punchy, brightness: 10500 },
+    drums: { ...DRUMS.disco, brightness: 10500 },
     bass: { ...BASS.saw, filter: 1100, filterLo: 180, filterHi: 850, dur: '8n' },
     lead: { ...LEAD.square, brightLo: 700, brightHi: 5200, echoBase: 0.24 },
     pad: { ...PAD.saw, filterLo: 500, filterHi: 2600, hold: 1.5 },
@@ -463,8 +500,9 @@ export const KITS = {
   // FM bass, wobbly electric-piano lead, soft AM pad.
   'UK garage': makeKit({
     tail: 4,
+    pump: 0.8,
     reverb: { decay: 2, preDelay: 0.01, wet: 0.75 },
-    drums: { ...DRUMS.dusty, brightness: 8500 },
+    drums: { ...DRUMS.crisp, brightness: 8500 },
     bass: { ...BASS.fm, filter: 700, fmLo: 1.2, fmHi: 5.5, dur: '16n', level: -5 },
     lead: { ...LEAD.keys, brightLo: 900, brightHi: 4300, echoBase: 0.14 },
     pad: { ...PAD.warm, filterLo: 450, filterHi: 2200, hold: 1.25 },
@@ -481,8 +519,9 @@ export const KITS = {
   }),
   'Russian hardbass': makeKit({
     tail: 3,
-    reverb: { decay: 1.2, preDelay: 0.01, wet: 0.55 },
-    drums: { ...DRUMS.punchy, brightness: 12500, level: -4 },
+    pump: true,
+    reverb: { decay: 1, preDelay: 0.01, wet: 0.4 },
+    drums: { ...DRUMS.hard, brightness: 12500 },
     bass: { ...BASS.fm, filter: 1500, fmLo: 3, fmHi: 10, dur: '16n', grit: 0.8, level: -4 },
     lead: { ...LEAD.square, brightLo: 1100, brightHi: 6500, echoBase: 0.08, level: -6 },
     pad: { ...PAD.warm, filterLo: 700, filterHi: 3500, hold: 1.2, level: -9 },
