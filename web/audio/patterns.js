@@ -10,7 +10,7 @@ const empty = () => Array(16).fill(null);
 const stab = (gate = 1, velocity = 0.6) => ({ gate, velocity }); // chord-less pad cell: plays the current chord
 // line('x..x', [cellA, cellB]): a cell at each 'x', cycling through the list
 const line = (str, cells) => { let k = 0; return [...str].map((c) => (c === 'x' ? cells[k++ % cells.length] : null)); };
-const lead = (str, ...degs) => line(str, degs.map((d) => note(d)));
+const lead = (str, octave, ...degs) => line(str, degs.map((d) => note(d, octave)));
 const DORIAN = [0, 2, 3, 5, 7, 9, 10], MINOR = [0, 2, 3, 5, 7, 8, 10], HARMONIC_MINOR = [0, 2, 3, 5, 7, 8, 11];
 
 export const GENRES = {
@@ -31,9 +31,9 @@ export const GENRES = {
         line('x..x..x...x.x...', [note(0, -1), note(0, 0), note(4, -1), note(0, -1), note(0, 0)]),
       ],
       lead: [
-        lead('x..x..x.x...x.x.', 0, 2, 4, 3, 2, 4),
-        line('x..x..x.x...x.x.', [note(0), note(2), note(4, 0, 2), note(3), note(2, 0, 2), note(4)]),
-        lead('x.x...x..x..x...', 0, 2, 4, 3, 2),
+        lead('x..x..x.x...x.x.', 2, 0, 2, 4, 3, 2, 4),
+        line('x..x..x.x...x.x.', [note(0, 2), note(2, 2), note(4, 2, 2), note(3, 2), note(2, 2, 2), note(4, 2)]),
+        lead('x.x...x..x..x...', 2, 0, 2, 4, 3, 2),
       ],
       pad: [
         line('x..x..x...x.x...', [stab(2), stab(1), stab(1), stab(2), stab(1)]),
@@ -59,13 +59,13 @@ export const GENRES = {
         line('x..x....x.x..x..', [note(0, -1), note(0, 0), note(0, -1), note(4, -1), note(2, 0)]),
       ],
       lead: [
-        lead('x.xx..x...x.x...', 0, 2, 4, 3, 2, 4),
-        lead('..x.xx....x..x..', 2, 4, 3, 0, 2),
-        lead('x.x.x....xx...x.', 0, 2, 4, 3, 2, 0),
+        lead('x.xx..x...x.x...', 2, 0, 2, 4, 3, 2, 4),
+        lead('..x.xx....x..x..', 2, 2, 4, 3, 0, 2),
+        lead('x.x.x....xx...x.', 2, 0, 2, 4, 3, 2, 0),
       ],
       pad: [
         line('...x..x...x..x..', [stab(1)]),
-        line('..x...x..x...x..', [stab(1, 0.5)]).map((c) => c),
+        line('..x...x..x...x..', [stab(1, 0.5)]),
         line('...x.....x..x...', [stab(1, 0.55)]),
       ],
     },
@@ -115,9 +115,9 @@ export const GENRES = {
         line('..x...x...x...x.', [note(0, -1), note(0, -1), note(0, -1), note(0, 0)]),
       ],
       lead: [
-        lead('x.x.x.x.x.x.x.x.', 0, 2, 4, 3),
-        lead('x.xxx.xxx.xxx.xx', 0, 2, 3, 4),
-        notes([note(0, 0, 8), ...empty().slice(1, 8), note(0, 0, 8), ...empty().slice(9)]),
+        lead('x.x.x.x.x.x.x.x.', 1, 0, 2, 4, 3),
+        lead('x.xxx.xxx.xxx.xx', 1, 0, 2, 3, 4),
+        notes([note(0, 1, 8), ...empty().slice(1, 8), note(0, 1, 8), ...empty().slice(9)]),
       ],
       pad: [
         notes([stab(2, 0.5), ...empty().slice(1)]),

@@ -92,7 +92,7 @@ test('genre tempo follower locks, ignores jitter, follows movement, and releases
   assert.equal(tempo(HEART_OFF), 72);
 });
 
-const settled = (press = 0.5, breath = 0) => ({ on: true, settled: true, hr: 75, press, breath });
+const settled = (press = 0.5, breath = 0, hr = 75) => ({ on: true, settled: true, hr, press, breath });
 const clone = (value) => structuredClone(value);
 const runBars = (name, { bars, raws, hearts }) => {
   const engine = createEvolution(name);
@@ -698,10 +698,10 @@ test('lead motif: unsettled lead plays the template pitches', () => {
   })));
 });
 
-const fourHearts = () => [settled(0.6, 0.1), settled(0.4, -0.2), settled(0.8, 0), settled(0.5, 0.3)];
-const runSteps = (name, steps, raws = [0x1234, 0x5678, 0x9abc, 0xdef0]) => {
+const fourHearts = (hr) => [settled(0.6, 0.1, hr), settled(0.4, -0.2, hr), settled(0.8, 0, hr), settled(0.5, 0.3, hr)];
+const runSteps = (name, steps, raws = [0x1234, 0x5678, 0x9abc, 0xdef0], hr = 75) => {
   const e = createEvolution(name); const out = [];
-  for (let s = 0; s < steps; s++) out.push(e.next({ raws, hearts: fourHearts(), stepSeconds: 0.125 }));
+  for (let s = 0; s < steps; s++) out.push(e.next({ raws, hearts: fourHearts(hr), stepSeconds: 0.125 }));
   return out;
 };
 const pc = (midi) => ((midi % 12) + 12) % 12;
@@ -709,7 +709,7 @@ const chordPcs = (key, chord) => chord.map((d) => pc(note(d, 0, key.scale, key.r
 
 test('Ambient output is unchanged', () => {
   const snap = JSON.parse(readFileSync(new URL('./ambient-snapshot.json', import.meta.url), 'utf8'));
-  assert.deepEqual(JSON.parse(JSON.stringify(runSteps('Ambient', 16 * 24))), snap);
+  assert.deepEqual(JSON.parse(JSON.stringify(runSteps('Ambient', 16 * 24, undefined, 80))), snap);
 });
 
 test('note() honours scale and root, defaults unchanged', () => {
@@ -775,4 +775,25 @@ test('UKG ghost hats are quieter than full hats', () => {
   const hats = runSteps('UK garage', 16).map((evs, step) => [step, evs.find((e) => e.voice === 'drums' && e.params.drum === 'hat')]).filter(([, e]) => e);
   const at = (step) => hats.find(([s]) => s === step)?.[1].params.velocity;
   assert.ok(at(0) < at(1), `ghost ${at(0)} < full ${at(1)}`);
+});
+
+test('French house bass octave variant lands an octave apart on the tonic', () => {
+  const bars = runSteps('French house', 16);
+  const pitches = new Set(bars.flat().filter((e) => e.voice === 'bass').map((e) => e.params.notes[0]));
+  assert.equal(pitches.size, 2);
+  const [lo, hi] = [...pitches].sort((a, b) => a - b);
+  assert.equal(hi - lo, 12);
+});
+
+test('French house lead stays in register without 7th leaps', () => {
+  let n = 0, big = 0;
+  for (let seed = 1; seed <= 12; seed++) {
+    const raws = [seed * 0x9e37 & 0xffff, seed * 0x85eb & 0xffff, seed * 0xc2b2 & 0xffff, seed * 0x27d4 & 0xffff];
+    const leads = runSteps('French house', 16 * 8, raws).flat().filter((e) => e.voice === 'lead').map((e) => e.params.notes[0]);
+    leads.forEach((m, i) => {
+      assert.ok(m >= 57 && m <= 93, `lead ${m}`);
+      if (i) { n++; if (Math.abs(m - leads[i - 1]) >= 9) big++; }
+    });
+  }
+  assert.ok(n > 0 && big / n < 0.1, `big leaps ${big}/${n}`);
 });

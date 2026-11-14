@@ -20,7 +20,7 @@ function sends(ctx, node, o) {
 }
 
 // ---------------------------------------------------------------- drums
-// Pieces: kick, snare, clap, hat, openhat, tom. Unknown names play the closed hat.
+// Pieces: kick, snare, clap, rim, hat, openhat, tom. Unknown names play the closed hat.
 // Velocity changes level everywhere, and decay on kick, snare and closed hat.
 //   kick:  sine body with a pitch sweep, optional noise `click` (dB) for attack, and
 //          optional `drive` (0..1) through a tanh saturator for weight.
@@ -32,11 +32,7 @@ function sends(ctx, node, o) {
 function drums(ctx, o) {
   const { add } = ctx;
   const bus = gain(add, o.level);
-  if (o.crush) {
-    const crush = add(new Tone.BitCrusher({ bits: o.crush, wet: o.crushWet ?? 0.5 }));
-    bus.connect(crush);
-    sends(ctx, crush, o);
-  } else sends(ctx, bus, o);
+  sends(ctx, bus, o);
 
   // kick
   const K = o.kick;
@@ -201,7 +197,7 @@ const DRUMS = {
 // type 'mono':   MonoSynth with a 24 dB filter envelope; `osc` may be 'fat...' (3 detuned voices).
 // type 'rubber': sine plus a square-modulated FM layer (-10 dB), both through the drive.
 // type 'soft':   plain Synth, long and round.
-// `layers` holds extra voices (the rubber FM, the `sub` sine in dB) triggered with the main one.
+// `layers` holds extra voices (the rubber FM) triggered with the main one.
 // Heart: pressure drives a distortion (0.4 * press * grit); heart rate sets the filter
 // base (mono, filterLo..filterHi) or the FM modulation index (rubber, 1..4).
 function bass(ctx, o) {
@@ -248,10 +244,6 @@ function bass(ctx, o) {
   const drive = gain(add, -10).connect(dist);
   syn.connect(drive);
   fmLayer?.connect(drive);
-  if (o.sub != null) layers.push(add(new Tone.Synth({
-    oscillator: { type: 'sine' }, portamento: glide,
-    envelope: { attack: 0.005, decay: 0.2, sustain: 0.8, release: 0.25 }, volume: o.sub,
-  })).connect(bus));
   const dur = o.dur ?? '8n';
   const update = (heart, t) => {
     const grit = heart?.settled
@@ -286,8 +278,8 @@ const BASS = {
 // type 'chop':     square through two formants alternating ah / oh, with a 40 ms pitch scoop.
 // type 'supersaw': 7-voice fat saw plus an octave-up copy (-8 dB), lightly distorted.
 // type 'pluck':    PluckSynth. Ignores velocity.
-// Optional `vibrato` {rate, depth} and `delay` {time, feedback, send (dB), pingpong}.
-// Heart: heart rate sets a low-pass before the vibrato, 400..4000 Hz (exponential).
+// Optional `delay` {time, feedback, send (dB), pingpong}.
+// Heart: heart rate sets a low-pass, 400..4000 Hz (exponential).
 // Note length is p.duration (the note's gate in seconds, cell.gate * stepSeconds from evolution.js) when given, else o.dur.
 const VOWELS = [[325, 700], [450, 800], [800, 1150], [400, 1600], [300, 2300]]; // u o a e i
 
@@ -303,11 +295,8 @@ function lead(ctx, o) {
     bus.connect(echoSend.connect(delay));
     sends(ctx, delay, o); // echoes go to the reverb too, so they sit in the same room
   }
-  let head = bus;
-  if (o.vibrato) head = add(new Tone.Vibrato(o.vibrato.rate, o.vibrato.depth)).connect(head);
-  const lp = add(new Tone.Filter({ type: 'lowpass', frequency: 2000, Q: 1 })).connect(head);
-  head = lp;
-  const glide = o.glide ?? 0;
+  const lp = add(new Tone.Filter({ type: 'lowpass', frequency: 2000, Q: 1 })).connect(bus);
+  let head = lp;
   let syn, up, formants, vowel;
   const formantPair = (s) => {
     const bp = (f) => add(new Tone.Filter({ type: 'bandpass', frequency: f, Q: 6 })).connect(head);
@@ -474,8 +463,8 @@ function makeKit(spec) {
         l.update?.(hearts.lead, t);
         p.update(hearts.pad, t);
         if (pump) {
-          pump.gain.setValueAtTime(1, t);
           if (stepInBar % 4 === 0) {
+            pump.gain.setValueAtTime(1, t);
             pump.gain.linearRampToValueAtTime(depth, t + 0.03);
             pump.gain.linearRampToValueAtTime(1, t + 0.18);
           }

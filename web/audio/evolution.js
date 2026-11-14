@@ -47,7 +47,7 @@ function voiceEvent(voice, cell, stepSeconds, offset, heart, key, chord, weight 
   const notes = voice === 'pad'
     ? (cell.degrees ?? chord).map((degree) => note(degree, cell.octave ?? 0, key.scale, key.root))
     : [voice === 'bass'
-      ? note((chord ? chord[0] : 0) + cell.degree, cell.octave, key.scale, key.root)
+      ? note((chord ? chord[0] : 0) + cell.degree, cell.octave + (note(chord ? chord[0] : 0, -1, key.scale, key.root) < LIMITS.bass[0] ? 1 : 0), key.scale, key.root)
       : note(cell.degree, cell.octave, key.scale, key.root)];
   return {
     voice,
