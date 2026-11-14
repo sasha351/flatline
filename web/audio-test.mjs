@@ -6,8 +6,9 @@ import { HEART_OFF } from './audio/heart.js';
 import { VOICES } from './bus.js';
 import { GENRES } from './audio/patterns.js';
 import { createTempo, songBpm } from './audio/tempo.js';
-import { phraseSeed, SCALE, ROOT } from './audio/mapping.js';
+import { phraseSeed, note, SCALE, ROOT } from './audio/mapping.js';
 import { createEvolution } from './audio/evolution.js';
+import { rng, makeMotif, develop } from './audio/melody.js';
 
 const names = ['French house', 'UK garage', 'Ambient', 'Russian hardbass'];
 
@@ -547,4 +548,125 @@ test('rapid kit replacement silences and disposes each replaced kit once', async
   await new Promise((resolve) => setTimeout(resolve, 0));
   assert.deepEqual(audio.created.slice(0, 3).map((kit) => kit.silences), [1, 1, 1]);
   assert.deepEqual(audio.created.slice(0, 3).map((kit) => kit.disposals), [1, 1, 1]);
+});
+
+const seeds = Array.from({ length: 200 }, (_, i) => (i * 2654435761) >>> 0);
+const heartAt = (hr, press = 0.5, breath = 0) => ({ on: true, settled: true, hr, press, breath });
+const nulls = (m) => m.filter((d) => d === null).length;
+const sounding = (m) => m.filter((d) => d !== null);
+const avgLeap = (hr) => {
+  let sum = 0, n = 0;
+  for (const s of seeds) {
+    const d = sounding(makeMotif(s, heartAt(hr)));
+    for (let i = 1; i < d.length; i++) { sum += Math.abs(d[i] - d[i - 1]); n++; }
+  }
+  return sum / n;
+};
+
+test('rng is deterministic and in [0,1)', () => {
+  const a = rng(5), b = rng(5);
+  for (let i = 0; i < 20; i++) { const v = a(); assert.equal(v, b()); assert.ok(v >= 0 && v < 1); }
+});
+
+test('makeMotif is deterministic and varies with seed', () => {
+  const h = heartAt(70);
+  assert.deepEqual(makeMotif(7, h), makeMotif(7, h));
+  const distinct = new Set([1, 2, 3, 4, 5].map((s) => JSON.stringify(makeMotif(s, h))));
+  assert.ok(distinct.size > 1);
+});
+
+test('makeMotif shape: 16 slots, degrees 0..9, resolves on 0/4/5', () => {
+  for (const s of seeds) {
+    const m = makeMotif(s, heartAt(60 + (s % 60), 0.5, (s % 3) - 1));
+    assert.equal(m.length, 16);
+    assert.notEqual(m[0], null);
+    for (const d of sounding(m)) assert.ok(Number.isInteger(d) && d >= 0 && d <= 9);
+    assert.ok([0, 4, 5].includes(sounding(m).at(-1)));
+  }
+});
+
+test('faster heart gives bigger leaps', () => {
+  assert.ok(avgLeap(110) > avgLeap(50));
+});
+
+test('develop: phrases 0 and 4 return the motif unchanged', () => {
+  const m = makeMotif(3, heartAt(70));
+  assert.deepEqual(develop(m, 0, 3, heartAt(70, 0.9)), m);
+  assert.deepEqual(develop(m, 4, 3, heartAt(70, 0.1)), m);
+});
+
+test('develop: phrases 1..3 stay valid, pure, and usually change the motif', () => {
+  let changed = 0;
+  for (const s of seeds) {
+    const h = heartAt(70, 0.5, (s % 3) - 1);
+    const m = makeMotif(s, h);
+    const copy = [...m];
+    let diff = false;
+    for (const p of [1, 2, 3]) {
+      const out = develop(m, p, s, h);
+      assert.equal(out.length, 16);
+      for (const d of sounding(out)) assert.ok(Number.isInteger(d) && d >= 0 && d <= 9);
+      assert.ok([0, 4, 5].includes(sounding(out).at(-1)));
+      if (JSON.stringify(out) !== JSON.stringify(m)) diff = true;
+    }
+    assert.deepEqual(m, copy);
+    if (diff) changed++;
+  }
+  assert.ok(changed > seeds.length * 0.8);
+});
+
+test('develop: high press fills rests, low press adds rests', () => {
+  for (const s of seeds.slice(0, 50)) {
+    const m = makeMotif(s, heartAt(70));
+    assert.equal(nulls(develop(m, 1, s, heartAt(70, 0.9))), 0);
+    assert.ok(nulls(develop(m, 1, s, heartAt(70, 0.1))) >= nulls(m));
+  }
+});
+
+const leadRun = (name, raw, bars, lead = settled(0.5, 0)) => runBars(name, {
+  bars, raws: [1, 2, raw, 4], hearts: [settled(), settled(), lead, settled()],
+});
+const leadMidi = (run) => run.flat(2).filter((e) => e.voice === 'lead').map((e) => e.params.notes[0]);
+
+test('lead motif: different raws give different lead notes, identical drums', () => {
+  const a = leadRun('French house', 111, 4);
+  const b = leadRun('French house', 987654, 4);
+  assert.notDeepEqual(leadMidi(a), leadMidi(b));
+  const drums = (r) => r.flat(2).filter((e) => e.voice === 'drums');
+  assert.deepEqual(drums(a), drums(b));
+});
+
+test('lead motif: rhythm stays within the genre template', () => {
+  const g = GENRES['French house'];
+  const run = leadRun('French house', 111, 4);
+  const maxOnsets = Math.max(...g.patterns.lead.map((v) => v.filter(Boolean).length));
+  run.forEach((bar) => assert.ok(bar.flat().filter((e) => e.voice === 'lead').length <= maxOnsets));
+  assert.ok(leadMidi(run).length > 0);
+});
+
+test('lead motif: finger lift regenerates the tune', () => {
+  const engine = createEvolution('French house');
+  const play = (raw, lead, steps) => {
+    const out = [];
+    for (let i = 0; i < steps; i++) {
+      out.push(...engine.next({ raws: [1, 2, raw, 4], hearts: [settled(), settled(), lead, settled()], stepSeconds: 0.125 }));
+    }
+    return out.filter((e) => e.voice === 'lead').map((e) => e.params.notes[0]);
+  };
+  const before = play(111, settled(), 16);
+  play(111, HEART_OFF, 16);
+  const after = play(987654, settled(), 16);
+  assert.ok(before.length && after.length);
+  assert.notDeepEqual(before, after);
+});
+
+test('lead motif: unsettled lead plays the template pitches', () => {
+  const g = GENRES['French house'];
+  const run = leadRun('French house', 111, 1, { ...settled(), settled: false });
+  const cells = g.patterns.lead.map((v) => v.filter(Boolean).map((c) => note(c.degree, c.octave)));
+  const got = leadMidi(run);
+  assert.ok(got.length > 0);
+  assert.ok(cells.some((c) => c.length === got.length && c.every((m, i) => {
+    let x = m; while (x < 57) x += 12; while (x > 93) x -= 12; return x === got[i];
+  })));
 });

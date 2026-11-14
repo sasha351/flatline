@@ -1,7 +1,9 @@
 import { VOICES } from '../bus.js';
 import { GENRES } from './patterns.js';
 import { note, phraseSeed } from './mapping.js';
+import { makeMotif, develop } from './melody.js';
 
+const LEAD = VOICES.indexOf('lead');
 const clamp = (value, lo, hi) => Math.min(hi, Math.max(lo, value));
 const LIMITS = {
   bass: [33, 64],
@@ -47,6 +49,8 @@ export function createEvolution(genreName) {
   if (!genre) throw new RangeError(`Unknown genre: ${genreName}`);
   const selected = Object.fromEntries(VOICES.map((voice) => [voice, 0]));
   let localStep = 0;
+  // Lead: heart-made motif; the genre lead pattern is only the rhythm template.
+  let motif = null, motifSeed = 0, motifPhrase = 0, degrees = null, onset = 0;
 
   return {
     next({ raws = [], hearts = [], stepSeconds = 0.125 } = {}) {
@@ -61,6 +65,20 @@ export function createEvolution(genreName) {
             selected[voice] = (phraseSeed(raws[index] >>> 0, heart) + phrase) % variants.length;
           }
         });
+        if (motif) {
+          motifPhrase++;
+          degrees = develop(motif, motifPhrase, motifSeed, hearts[LEAD]);
+          onset = 0;
+        }
+      }
+
+      const leadHeart = hearts[LEAD];
+      if (!leadHeart?.on) motif = degrees = null; // finger lift: re-landing gives a new tune
+      else if (leadHeart.settled && motif === null) {
+        motifSeed = phraseSeed(raws[LEAD] >>> 0, leadHeart);
+        motif = degrees = makeMotif(motifSeed, leadHeart);
+        motifPhrase = 0;
+        onset = 0;
       }
 
       const offset = step % 2 === 1 ? genre.swing * stepSeconds : 0;
@@ -76,7 +94,14 @@ export function createEvolution(genreName) {
             if (hit) events.push(voiceEvent(voice, drum, stepSeconds, offset, heart));
           });
         } else if (variant[position]) {
-          const cell = variant[position];
+          let cell = variant[position];
+          if (voice === 'lead' && degrees) {
+            const n = variant.filter(Boolean).length;
+            const len = Math.max(1, Math.min(16, Math.floor(n * genre.phraseBars / 2)));
+            const deg = degrees[onset++ % len];
+            if (deg === null) return;
+            cell = { ...cell, degree: deg };
+          }
           events.push(voiceEvent(voice, cell, stepSeconds, offset, heart));
         }
       });

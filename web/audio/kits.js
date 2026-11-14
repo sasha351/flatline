@@ -265,7 +265,7 @@ const BASS = {
 // type 'pluck': PluckSynth. Ignores velocity.
 // Optional `vibrato` {rate, depth} and `delay` {time, feedback, send (dB), pingpong}.
 // Heart: heart rate sets a low-pass before the vibrato, 400..4000 Hz (exponential).
-// Note length is p.duration (the arp step, in seconds) when given, else o.dur.
+// Note length is p.duration (the note's gate in seconds, cell.gate * stepSeconds from evolution.js) when given, else o.dur.
 function lead(ctx, o) {
   const { add } = ctx;
   const bus = gain(add, o.level);
