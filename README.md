@@ -96,10 +96,10 @@ Open http://localhost:8000 in Chrome or Edge. Use **Simulate** (no hardware) or 
 
 The kit menu contains four evolving genre styles:
 
-- **French house** — four-on-the-floor groove, syncopated bass, chord stabs, and grid pumping
-- **UK garage** — swung two-step drums, shuffled hats, and syncopated bass
+- **French house** — disco four-on-the-floor with sidechain pump, plucked bass, talkbox vowel lead, and short phased saw stabs
+- **UK garage** — shuffled two-step with a rim and metal hats, rubbery FM bass, chopped ah/oh vocal lead, and organ stabs
 - **Ambient** — sparse percussion, long bass swells, sustained chords, and wide melodic space
-- **Russian hardbass** — driving kick, offbeat donk bass, short riffs, and concise fills
+- **Russian hardbass** — long distorted kick, offbeat fat-saw donk bass, supersaw riffs, and rave stabs
 
 Each active sensor evolves its assigned voice automatically from its recent signal history
 and the shared musical grid. Kit selection is the only creative control; connection,

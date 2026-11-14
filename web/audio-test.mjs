@@ -698,8 +698,7 @@ test('lead motif: unsettled lead plays the template pitches', () => {
   })));
 });
 
-const settledAt = (press, breath, hr = 80) => ({ on: true, settled: true, hr, press, breath });
-const fourHearts = () => [settledAt(0.6, 0.1), settledAt(0.4, -0.2), settledAt(0.8, 0), settledAt(0.5, 0.3)];
+const fourHearts = () => [settled(0.6, 0.1), settled(0.4, -0.2), settled(0.8, 0), settled(0.5, 0.3)];
 const runSteps = (name, steps, raws = [0x1234, 0x5678, 0x9abc, 0xdef0]) => {
   const e = createEvolution(name); const out = [];
   for (let s = 0; s < steps; s++) out.push(e.next({ raws, hearts: fourHearts(), stepSeconds: 0.125 }));
@@ -727,9 +726,9 @@ test('snapToChord picks nearest chord tone by scale degree', () => {
 });
 
 test('motif with n = 7 resolves to root, 5th or octave root', () => {
-  const m = makeMotif(12345, settledAt(0.6, 0.1), 7);
+  const m = makeMotif(12345, settled(0.6, 0.1), 7);
   assert.ok([0, 4, 7].includes(m[m.findLastIndex((d) => d !== null)]));
-  const d = develop(m, 1, 12345, settledAt(0.6, 0.1), 7);
+  const d = develop(m, 1, 12345, settled(0.6, 0.1), 7);
   assert.ok([0, 4, 7].includes(d[d.findLastIndex((x) => x !== null)]));
 });
 

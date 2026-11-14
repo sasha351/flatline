@@ -26,6 +26,7 @@ function sends(ctx, node, o) {
 //          optional `drive` (0..1) through a tanh saturator for weight.
 //   snare: optional pitched `body` (MembraneSynth) plus white or pink noise through a
 //          high-pass / low-pass pair. No body + slow attack = a brush.
+//   rim:   short pitched click (MembraneSynth through a band-pass), `rim.note`/`volume`/`decay`.
 //   hats:  `kind` 'metal' (MetalSynth, clangy and bright) or 'noise' (filtered noise,
 //          softer). One synth serves closed and open hats, so a closed hat chokes an open one.
 function drums(ctx, o) {
@@ -159,25 +160,6 @@ function drums(ctx, o) {
 }
 
 const DRUMS = {
-  // Tuned 808: long boomy kick with a click and a little drive, tonal snare,
-  // crisp metallic hats.
-  punchy: {
-    level: -6, verb: -18,
-    kick: { note: 'A1', pitchDecay: 0.08, octaves: 5, decay: 0.9, click: -14, drive: 0.25, volume: -2 },
-    snare: { body: 'E3', bodyType: 'triangle', bodyDecay: 0.12, noise: 'white', hp: 1800, lp: 9000, decay: 0.18 },
-    hat: { kind: 'metal', closed: 0.035, open: 0.32, modulationIndex: 40, resonance: 6000, hp: 7500 },
-    clap: { freq: 1200 },
-  },
-  // Boom-bap: short, thuddy, heavily driven kick, dark pink-noise snare,
-  // soft noise hats, all through the 6-bit crush.
-  dusty: {
-    level: -6, crush: 6, crushWet: 0.35, verb: -14,
-    kick: { note: 'A1', pitchDecay: 0.025, octaves: 3.5, decay: 0.35, click: -18, drive: 0.6, volume: -3 },
-    snare: { body: 'C3', bodyType: 'sine', bodyDecay: 0.15, noise: 'pink', hp: 900, lp: 5000, decay: 0.24 },
-    hat: { kind: 'noise', closed: 0.04, open: 0.28, hp: 6000, lp: 11000, volume: -14 },
-    clap: { freq: 900 },
-    tom: { note: 'D2', volume: -8 },
-  },
   // Brushes: soft sub kick with no click, a swishy brush snare (slow attack,
   // no body), airy noise hats.
   soft: {
@@ -216,39 +198,29 @@ const DRUMS = {
 };
 
 // ---------------------------------------------------------------- bass
-// type 'mono': MonoSynth with a 24 dB filter envelope; heart rate sets the envelope base.
-// type 'fm':   FMSynth; heart rate sets the modulation index (faster heart = growlier).
-// type 'soft': plain Synth, long and round.
-// `sub` (dB) layers a sine at the same pitch under the main voice for weight.
+// type 'mono':   MonoSynth with a 24 dB filter envelope; `osc` may be 'fat...' (3 detuned voices).
+// type 'rubber': sine plus a square-modulated FM layer (-10 dB), both through the drive.
+// type 'soft':   plain Synth, long and round.
+// `layers` holds extra voices (the rubber FM, the `sub` sine in dB) triggered with the main one.
 // Heart: pressure drives a distortion (0.4 * press * grit); heart rate sets the filter
-// base (mono, 100..600 Hz) or the modulation index (fm, 1.5..8).
+// base (mono, filterLo..filterHi) or the FM modulation index (rubber, 1..4).
 function bass(ctx, o) {
   const { add } = ctx;
   const bus = gain(add, o.level);
   sends(ctx, bus, o);
   const character = add(new Tone.Filter({ type: 'lowpass', frequency: o.filter ?? 900, Q: o.q ?? 2 })).connect(bus);
   const glide = o.glide ?? 0;
-  let syn, setTone = () => {};
+  let syn, fmLayer, setTone = () => {};
   const layers = []; // extra voices triggered with the main one
   if (o.type === 'rubber') {
     const env = { attack: 0.003, decay: 0.2, sustain: 0.3, release: 0.15 };
     syn = add(new Tone.Synth({ oscillator: { type: 'sine' }, portamento: glide, envelope: env }));
-    const fm = add(new Tone.FMSynth({
+    const fm = fmLayer = add(new Tone.FMSynth({
       harmonicity: 1, modulationIndex: 2, modulation: { type: 'square' },
       portamento: glide, envelope: env, volume: -10,
     }));
     layers.push(fm);
     setTone = (hr, t) => fm.modulationIndex.setTargetAtTime(hrLin(hr, 1, 4), t, 0.1);
-  } else if (o.type === 'fm') {
-    syn = add(new Tone.FMSynth({
-      harmonicity: o.harmonicity ?? 1, modulationIndex: 4, portamento: glide,
-      modulation: { type: o.mod ?? 'square' },
-      envelope: { attack: 0.005, decay: 0.3, sustain: 0.4, release: 0.3 },
-      modulationEnvelope: { attack: 0.005, decay: 0.2, sustain: 0.2, release: 0.3 },
-    }));
-    setTone = (hr, t) => syn.modulationIndex.setTargetAtTime(
-      hrLin(hr, o.fmLo ?? 1.5, o.fmHi ?? 8), t, 0.1,
-    );
   } else if (o.type === 'soft') {
     syn = add(new Tone.Synth({
       oscillator: { type: o.osc ?? 'triangle' }, portamento: glide,
@@ -275,7 +247,7 @@ function bass(ctx, o) {
   const dist = add(new Tone.Distortion({ distortion: 0, wet: 0, oversample: '2x' })).connect(post);
   const drive = gain(add, -10).connect(dist);
   syn.connect(drive);
-  if (o.type === 'rubber') layers[0].connect(drive);
+  fmLayer?.connect(drive);
   if (o.sub != null) layers.push(add(new Tone.Synth({
     oscillator: { type: 'sine' }, portamento: glide,
     envelope: { attack: 0.005, decay: 0.2, sustain: 0.8, release: 0.25 }, volume: o.sub,
@@ -303,8 +275,6 @@ function bass(ctx, o) {
 }
 
 const BASS = {
-  saw: { type: 'mono', osc: 'sawtooth', glide: 0.03, sub: -8, level: -9 },
-  fm: { type: 'fm', harmonicity: 1, glide: 0.02, sub: -10, level: -2 },
   soft: { type: 'soft', osc: 'triangle', glide: 0.08, dur: '4n', level: -6, grit: 0.4 },
   pluck: { type: 'mono', osc: 'square', glide: 0, level: -8, dur: '16n', octaves: 3, filterLo: 250, filterHi: 1200, q: 4 },
   rubber: { type: 'rubber', glide: 0.06, level: -4, dur: '16n', filter: 900 },
@@ -312,12 +282,15 @@ const BASS = {
 };
 
 // ---------------------------------------------------------------- lead
-// type 'synth': Synth (any oscillator, `spread` makes it a 3-voice fat one).
-// type 'fm':    FMSynth, bell / electric-piano family.
-// type 'pluck': PluckSynth. Ignores velocity.
+// type 'talkbox':  fat saw through two glided band-pass formants; note picks the vowel, exhale opens "a".
+// type 'chop':     square through two formants alternating ah / oh, with a 40 ms pitch scoop.
+// type 'supersaw': 7-voice fat saw plus an octave-up copy (-8 dB), lightly distorted.
+// type 'pluck':    PluckSynth. Ignores velocity.
 // Optional `vibrato` {rate, depth} and `delay` {time, feedback, send (dB), pingpong}.
 // Heart: heart rate sets a low-pass before the vibrato, 400..4000 Hz (exponential).
 // Note length is p.duration (the note's gate in seconds, cell.gate * stepSeconds from evolution.js) when given, else o.dur.
+const VOWELS = [[325, 700], [450, 800], [800, 1150], [400, 1600], [300, 2300]]; // u o a e i
+
 function lead(ctx, o) {
   const { add } = ctx;
   const bus = gain(add, o.level);
@@ -336,25 +309,28 @@ function lead(ctx, o) {
   head = lp;
   const glide = o.glide ?? 0;
   let syn, up, formants, vowel;
-  const bp = (f) => add(new Tone.Filter({ type: 'bandpass', frequency: f, Q: 6 })).connect(head);
+  const formantPair = (s) => {
+    const bp = (f) => add(new Tone.Filter({ type: 'bandpass', frequency: f, Q: 6 })).connect(head);
+    const pair = [bp(800), bp(1150)];
+    pair.forEach((f) => s.connect(f));
+    return pair;
+  };
   if (o.type === 'talkbox') {
     syn = add(new Tone.Synth({
       oscillator: { type: 'fatsawtooth', count: 2, spread: 10 }, portamento: o.glide ?? 0.05,
       envelope: { attack: 0.01, decay: 0.2, sustain: 0.7, release: 0.15 },
     }));
-    formants = [bp(800), bp(1150)];
-    formants.forEach((f) => syn.connect(f));
-    vowel = (p, heart) => { // u o a e i; breath (exhale) opens to "a"
+    formants = formantPair(syn);
+    vowel = (p, heart) => { // breath (exhale) opens to "a"
       const v = heart.breath > 0.3 ? 2 : p.notes[0] % 5;
-      return [[325, 700], [450, 800], [800, 1150], [400, 1600], [300, 2300]][v];
+      return VOWELS[v];
     };
   } else if (o.type === 'chop') {
     syn = add(new Tone.Synth({
       oscillator: { type: 'square' },
       envelope: { attack: 0.003, decay: 0.12, sustain: 0.2, release: 0.06 },
     }));
-    formants = [bp(800), bp(1150)];
-    formants.forEach((f) => syn.connect(f));
+    formants = formantPair(syn);
     let n = 0;
     vowel = () => (n++ % 2 ? [450, 800] : [800, 1150]); // ah / oh
   } else if (o.type === 'supersaw') {
@@ -365,20 +341,8 @@ function lead(ctx, o) {
     syn = saw(0); up = saw(-8);
     const drive = add(new Tone.Distortion({ distortion: 0.3, wet: 0.6 })).connect(head);
     syn.connect(drive); up.connect(drive);
-  } else if (o.type === 'pluck') {
-    syn = add(new Tone.PluckSynth({ attackNoise: 1.5, dampening: 4000, resonance: 0.97, release: 1.5 }));
-  } else if (o.type === 'fm') {
-    syn = add(new Tone.FMSynth({
-      harmonicity: o.harmonicity ?? 3, modulationIndex: o.index ?? 4, portamento: glide,
-      envelope: { attack: 0.005, decay: o.decay ?? 0.6, sustain: 0.15, release: 0.8 },
-      modulationEnvelope: { attack: 0.002, decay: 0.3, sustain: 0, release: 0.4 },
-    }));
   } else {
-    syn = add(new Tone.Synth({
-      oscillator: o.spread ? { type: o.osc, count: 3, spread: o.spread } : { type: o.osc ?? 'square' },
-      portamento: glide,
-      envelope: { attack: 0.005, decay: 0.2, sustain: 0.4, release: 0.3 },
-    }));
+    syn = add(new Tone.PluckSynth({ attackNoise: 1.5, dampening: 4000, resonance: 0.97, release: 1.5 }));
   }
   if (!formants && !up) syn.connect(head);
   const dur = o.dur ?? '8n';
@@ -409,18 +373,6 @@ function lead(ctx, o) {
 }
 
 const LEAD = {
-  square: {
-    type: 'synth', osc: 'fatsquare', spread: 12, glide: 0.015, dur: '8n',
-    vibrato: { rate: 5, depth: 0.06 },
-    delay: { pingpong: true, time: '8n.', feedback: 0.3, send: -8 },
-    verb: -12, level: -7,
-  },
-  keys: {
-    type: 'fm', harmonicity: 3, index: 2.5, decay: 0.9, dur: '8n',
-    vibrato: { rate: 4.5, depth: 0.12 }, // tape wobble
-    delay: { time: '4n', feedback: 0.25, send: -10 },
-    verb: -10, level: -1,
-  },
   talkbox: { type: 'talkbox', glide: 0.05, delay: { pingpong: true, time: '8n.', feedback: 0.25, send: -12 }, verb: -12, level: -6 },
   chop: { type: 'chop', delay: { time: '8n', feedback: 0.2, send: -14 }, verb: -10, level: -6 },
   supersaw: { type: 'supersaw', glide: 0.02, verb: -16, level: -10 },
@@ -432,7 +384,8 @@ const LEAD = {
 };
 
 // ---------------------------------------------------------------- pad
-// PolySynth of type 'synth' (any oscillator; `spread` = 3-voice fat), 'am' or 'fm'.
+// PolySynth of Synth voices: `osc` is a type name, an oscillator object (e.g. custom partials),
+// or with `spread` a 3-voice fat one. `attack`/`decay`/`sustain`/`release` override the envelope.
 // Chain: synth -> 180 Hz high-pass (keeps it off the bass) -> low-pass following
 // heart -> optional slow AutoFilter (`motion` Hz), Phaser, Chorus -> bus.
 // Heart: update() sets the low-pass from heart rate, 300..3000 Hz (exponential),
@@ -456,15 +409,8 @@ function pad(ctx, o) {
   const hp = add(new Tone.Filter({ type: 'highpass', frequency: 180 })).connect(lp);
 
   const env = { attack: o.attack ?? 1.5, decay: o.decay ?? 1, sustain: o.sustain ?? 0.8, release: o.release ?? 3 };
-  let syn;
-  if (o.type === 'am') {
-    syn = new Tone.PolySynth(Tone.AMSynth, { harmonicity: 2, modulation: { type: 'triangle' }, envelope: env });
-  } else if (o.type === 'fm') {
-    syn = new Tone.PolySynth(Tone.FMSynth, { harmonicity: 2, modulationIndex: 1.5, envelope: env });
-  } else {
-    const oscillator = typeof o.osc === 'object' ? o.osc : o.spread ? { type: o.osc, count: 3, spread: o.spread } : { type: o.osc ?? 'triangle' };
-    syn = new Tone.PolySynth(Tone.Synth, { oscillator, envelope: env });
-  }
+  const oscillator = typeof o.osc === 'object' ? o.osc : o.spread ? { type: o.osc, count: 3, spread: o.spread } : { type: o.osc ?? 'triangle' };
+  const syn = new Tone.PolySynth(Tone.Synth, { oscillator, envelope: env });
   add(syn).connect(hp);
   syn.maxPolyphony = 16;
   return {
@@ -483,16 +429,6 @@ function pad(ctx, o) {
 }
 
 const PAD = {
-  saw: {
-    osc: 'fatsawtooth', spread: 25, attack: 1.2, release: 3, hold: 3,
-    chorus: { rate: 0.7, depth: 0.5 }, motion: 0.08,
-    verb: -2, level: -18,
-  },
-  warm: {
-    type: 'am', attack: 0.8, release: 2.5, hold: 2.5,
-    chorus: { rate: 1.2, depth: 0.7 },
-    verb: -6, level: -6,
-  },
   air: {
     osc: 'fattriangle', spread: 30, attack: 3, release: 5, hold: 3,
     phaser: true, motion: 0.05,
@@ -556,8 +492,8 @@ function makeKit(spec) {
 
 // Order matters: the first kit is the default.
 export const KITS = {
-  // Clean, punchy electronic: tuned 808-style drums, saw bass with sub,
-  // fat square lead with ping-pong echoes, moving supersaw pad.
+  // Disco four-on-the-floor with pumping sidechain: tight kick and big clap, plucked
+  // square bass, talkbox vowel lead, short phased disco-saw stabs.
   'French house': makeKit({
     tail: 5,
     pump: true,
@@ -567,8 +503,8 @@ export const KITS = {
     lead: { ...LEAD.talkbox, brightLo: 1200, brightHi: 6000, echoBase: 0.18 },
     pad: { ...PAD.discoStab, filterLo: 600, filterHi: 4000 },
   }),
-  // Dusty and warm: whole kit low-passed at 4.5 kHz, crushed drums,
-  // FM bass, wobbly electric-piano lead, soft AM pad.
+  // Shuffled 2-step: crisp dry kit with metal hats and rim, rubbery FM bass,
+  // chopped ah/oh vocal lead, organ stabs.
   'UK garage': makeKit({
     tail: 4,
     pump: 0.8,
@@ -588,6 +524,7 @@ export const KITS = {
     lead: { ...LEAD.pluck, brightLo: 500, brightHi: 3000, echoBase: 0.12 },
     pad: { ...PAD.air, filterLo: 280, filterHi: 1800, hold: 5 },
   }),
+  // Hard and fast: long distorted kick, offbeat fat-saw bass, supersaw lead, rave stabs.
   'Russian hardbass': makeKit({
     tail: 3,
     pump: true,
