@@ -1,11 +1,14 @@
 // Rhythm patterns per tempo band: 16 steps per bar (16ths), x = hit. Pure data.
 
-const grid = (s) => [...s].map((c) => c === 'x');
-const drum = (s) => grid(s);
+import { SCALE, ROOT } from './mapping.js';
+
+const drum = (s) => [...s].map((c) => (c === 'x' ? 1 : c === 'g' ? 0.5 : 0));
 const note = (degree, octave = 0, gate = 1, velocity = 0.7) => ({ degree, octave, gate, velocity });
 const chord = (degrees, octave = 0, gate = 2, velocity = 0.6) => ({ degrees, octave, gate, velocity });
 const notes = (cells) => cells.map((cell) => cell ?? null);
 const empty = () => Array(16).fill(null);
+const stab = (gate = 1, velocity = 0.6) => ({ gate, velocity }); // chord-less pad cell: plays the current chord
+const DORIAN = [0, 2, 3, 5, 7, 9, 10], MINOR = [0, 2, 3, 5, 7, 8, 10], HARMONIC_MINOR = [0, 2, 3, 5, 7, 8, 11];
 
 const HOUSE_KICKS = drum('x...x...x...x...');
 const GARAGE_KICKS = drum('x.....x..x......');
@@ -13,6 +16,7 @@ const HARDBASS_KICKS = drum('x...x...x...x...');
 
 export const GENRES = {
   'French house': {
+    key: { root: 43, scale: DORIAN, chords: [[0, 2, 4, 6], [3, 5, 7, 9], [0, 2, 4, 6], [6, 8, 10, 12]] },
     tempo: { min: 112, max: 128, default: 120 },
     phraseBars: 4,
     swing: 0,
@@ -40,6 +44,7 @@ export const GENRES = {
     },
   },
   'UK garage': {
+    key: { root: 41, scale: MINOR, chords: [[0, 2, 4, 6, 8], [5, 7, 9, 11], [3, 5, 7, 9, 11], [4, 6, 8, 10]] },
     tempo: { min: 128, max: 138, default: 132 },
     phraseBars: 4,
     swing: 0.30,
@@ -67,6 +72,7 @@ export const GENRES = {
     },
   },
   Ambient: {
+    key: { root: ROOT, scale: SCALE, chords: null },
     tempo: { min: 60, max: 90, default: 72 },
     phraseBars: 8,
     swing: 0,
@@ -94,6 +100,7 @@ export const GENRES = {
     },
   },
   'Russian hardbass': {
+    key: { root: 45, scale: HARMONIC_MINOR, chords: [[0, 2, 4], [5, 7, 9], [3, 5, 7], [4, 6, 8]] },
     tempo: { min: 145, max: 165, default: 150 },
     phraseBars: 4,
     swing: 0,

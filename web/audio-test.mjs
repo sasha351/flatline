@@ -7,7 +7,7 @@ import { VOICES } from './bus.js';
 import { GENRES } from './audio/patterns.js';
 import { createTempo, songBpm } from './audio/tempo.js';
 import { phraseSeed, note, SCALE, ROOT } from './audio/mapping.js';
-import { createEvolution } from './audio/evolution.js';
+import { createEvolution, snapToChord } from './audio/evolution.js';
 import { rng, makeMotif, develop } from './audio/melody.js';
 
 const names = ['French house', 'UK garage', 'Ambient', 'Russian hardbass'];
@@ -39,7 +39,7 @@ test('genre grids are valid and variants change musical content', () => {
         if (voice === 'drums') {
           for (const drumGrid of Object.values(grid)) {
             assert.equal(drumGrid.length, 16, `${name} ${voice} grid length`);
-            assert.ok(drumGrid.every((cell) => typeof cell === 'boolean'));
+            assert.ok(drumGrid.every((cell) => [0, 0.5, 1].includes(cell)));
           }
         } else {
           assert.equal(grid.length, 16, `${name} ${voice} grid length`);
@@ -63,7 +63,7 @@ test('genre grids are valid and variants change musical content', () => {
 
 test('genre identity and ambient density constraints', () => {
   const house = GENRES['French house'].patterns.drums[0];
-  assert.deepEqual(house.kick, [true, false, false, false, true, false, false, false, true, false, false, false, true, false, false, false]);
+  assert.deepEqual(house.kick, [1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0]);
   assert.deepEqual(GENRES['Russian hardbass'].patterns.bass[0].map((v) => !!v), [false, false, true, false, false, false, true, false, false, false, true, false, false, false, true, false]);
   assert.notDeepEqual(GENRES['UK garage'].patterns.drums[0].kick, house.kick);
   for (const grid of GENRES.Ambient.patterns.lead) {
@@ -141,7 +141,8 @@ test('phrase evolution is reproducible, neutral while unsettled, and bounded', (
         if (event.voice !== 'drums') {
           assert.ok(event.params.duration > 0 && Number.isFinite(event.params.duration));
           for (const midi of event.params.notes) {
-            assert.ok(SCALE.includes((((midi - ROOT) % 12) + 12) % 12));
+            const { key } = GENRES[name];
+            assert.ok(key.scale.map((s) => (((key.root + s) % 12) + 12) % 12).includes((((midi) % 12) + 12) % 12));
             if (event.voice === 'bass') assert.ok(midi >= 33 && midi <= 64);
             if (event.voice === 'lead') assert.ok(midi >= 57 && midi <= 93);
             if (event.voice === 'pad') assert.ok(midi >= 45 && midi <= 88);
@@ -663,10 +664,61 @@ test('lead motif: finger lift regenerates the tune', () => {
 test('lead motif: unsettled lead plays the template pitches', () => {
   const g = GENRES['French house'];
   const run = leadRun('French house', 111, 1, { ...settled(), settled: false });
-  const cells = g.patterns.lead.map((v) => v.filter(Boolean).map((c) => note(c.degree, c.octave)));
+  const cells = g.patterns.lead.map((v) => v.filter(Boolean).map((c) => note(c.degree, c.octave, g.key.scale, g.key.root)));
   const got = leadMidi(run);
   assert.ok(got.length > 0);
   assert.ok(cells.some((c) => c.length === got.length && c.every((m, i) => {
     let x = m; while (x < 57) x += 12; while (x > 93) x -= 12; return x === got[i];
   })));
 });
+
+const settledAt = (press, breath, hr = 80) => ({ on: true, settled: true, hr, press, breath });
+const fourHearts = () => [settledAt(0.6, 0.1), settledAt(0.4, -0.2), settledAt(0.8, 0), settledAt(0.5, 0.3)];
+const runSteps = (name, steps, raws = [0x1234, 0x5678, 0x9abc, 0xdef0]) => {
+  const e = createEvolution(name); const out = [];
+  for (let s = 0; s < steps; s++) out.push(e.next({ raws, hearts: fourHearts(), stepSeconds: 0.125 }));
+  return out;
+};
+const pc = (midi) => ((midi % 12) + 12) % 12;
+const chordPcs = (key, chord) => chord.map((d) => pc(note(d, 0, key.scale, key.root)));
+
+test('Ambient output is unchanged', () => {
+  const snap = JSON.parse(readFileSync(new URL('./ambient-snapshot.json', import.meta.url), 'utf8'));
+  assert.deepEqual(JSON.parse(JSON.stringify(runSteps('Ambient', 16 * 24))), snap);
+});
+
+test('note() honours scale and root, defaults unchanged', () => {
+  assert.equal(note(0, 0), ROOT);
+  assert.equal(note(2, 0, [0, 2, 3, 5, 7, 9, 10], 43), 46);
+  assert.equal(note(7, 0, [0, 2, 3, 5, 7, 9, 10], 43), 55);
+});
+
+test('snapToChord picks nearest chord tone by scale degree', () => {
+  assert.equal(snapToChord(1, [0, 2, 4], 7), 0);   // tie 0/2 -> lower
+  assert.equal(snapToChord(3, [0, 2, 4], 7), 2);
+  assert.equal(snapToChord(6, [0, 2, 4], 7), 7);   // octave root
+  assert.equal(snapToChord(5, [5, 7, 9], 7), 5);
+});
+
+test('motif with n = 7 resolves to root, 5th or octave root', () => {
+  const m = makeMotif(12345, settledAt(0.6, 0.1), 7);
+  assert.ok([0, 4, 7].includes(m[m.findLastIndex((d) => d !== null)]));
+  const d = develop(m, 1, 12345, settledAt(0.6, 0.1), 7);
+  assert.ok([0, 4, 7].includes(d[d.findLastIndex((x) => x !== null)]));
+});
+
+for (const name of ['French house', 'UK garage', 'Russian hardbass']) {
+  test(`${name}: notes in key, lead strong beats on chord tones`, () => {
+    const { key } = GENRES[name];
+    const steps = runSteps(name, 16 * GENRES[name].phraseBars * 2);
+    const scalePcs = key.scale.map((s) => pc(key.root + s));
+    steps.forEach((events, step) => {
+      const chord = key.chords[Math.floor(step / 16) % key.chords.length];
+      for (const ev of events) {
+        if (ev.voice === 'drums') continue;
+        ev.params.notes.forEach((m) => assert.ok(scalePcs.includes(pc(m)), `${name} ${ev.voice} ${m} in scale`));
+        if (ev.voice === 'lead' && step % 4 === 0) assert.ok(chordPcs(key, chord).includes(pc(ev.params.notes[0])));
+      }
+    });
+  });
+}

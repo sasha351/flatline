@@ -24,9 +24,9 @@ export function fields(value, widths) {
   });
 }
 
-export function note(index, octave) {
-  const n = SCALE.length;
-  return ROOT + 12 * (octave + Math.floor(index / n)) + SCALE[index % n];
+export function note(index, octave, scale = SCALE, root = ROOT) {
+  const n = scale.length;
+  return root + 12 * (octave + Math.floor(index / n)) + scale[index % n];
 }
 
 const clamp = (value, lo, hi) => Math.min(hi, Math.max(lo, value));

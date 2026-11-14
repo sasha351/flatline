@@ -15,13 +15,13 @@ export function rng(seed) { // mulberry32
 }
 
 // Snap the last sounding note to the nearest of root / 5th / octave root.
-function resolve(m) {
+function resolve(m, n) {
   const i = m.findLastIndex((d) => d !== null);
-  if (i >= 0) m[i] = [0, 4, 5].reduce((b, c) => (Math.abs(c - m[i]) < Math.abs(b - m[i]) ? c : b));
+  if (i >= 0) m[i] = [0, 4, n].reduce((b, c) => (Math.abs(c - m[i]) < Math.abs(b - m[i]) ? c : b));
   return m;
 }
 
-export function makeMotif(seed, heart) {
+export function makeMotif(seed, heart, n = 5) {
   const r = rng(seed);
   const leap = clamp((heart.hr - 55) / 50, 0, 0.4);
   const bias = Math.sign(heart.breath);
@@ -35,10 +35,10 @@ export function makeMotif(seed, heart) {
     d = clamp(d + dir * size, 0, 9);
     m.push(r() < 0.15 ? null : d);
   }
-  return resolve(m);
+  return resolve(m, n);
 }
 
-export function develop(motif, phrase, seed, heart) {
+export function develop(motif, phrase, seed, heart, n = 5) {
   if (phrase % 4 === 0) return [...motif];
   const r = rng((seed + phrase) >>> 0);
   const first = motif.find((d) => d !== null);
@@ -54,5 +54,5 @@ export function develop(motif, phrase, seed, heart) {
     const idx = m.map((d, i) => (d !== null && i > 0 ? i : -1)).filter((i) => i >= 0);
     if (idx.length > 1) m[idx[Math.floor(r() * idx.length)]] = null; // keep >=1 sounding
   }
-  return resolve(m);
+  return resolve(m, n);
 }
