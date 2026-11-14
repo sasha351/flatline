@@ -9,10 +9,10 @@ export function songBpm(hr, genreName) {
 }
 
 const GENRE_TEMPOS = {
-  'French house': { min: 112, max: 128, default: 120 },
-  'UK garage': { min: 128, max: 138, default: 132 },
+  'French house': { min: 120, max: 126, default: 123 },
+  'UK garage': { min: 130, max: 136, default: 133 },
   Ambient: { min: 60, max: 90, default: 72 },
-  'Russian hardbass': { min: 145, max: 165, default: 150 },
+  'Russian hardbass': { min: 150, max: 160, default: 155 },
 };
 
 // Tempo follower. update(drumHeart) -> target BPM.

@@ -15,10 +15,10 @@ const names = ['French house', 'UK garage', 'Ambient', 'Russian hardbass'];
 test('genre names, tempo ranges, defaults, phrase lengths, and swing', () => {
   assert.deepEqual(Object.keys(GENRES), names);
   for (const [name, lo, hi, def, bars] of [
-    ['French house', 112, 128, 120, 4],
-    ['UK garage', 128, 138, 132, 4],
+    ['French house', 120, 126, 123, 4],
+    ['UK garage', 130, 136, 133, 4],
     ['Ambient', 60, 90, 72, 8],
-    ['Russian hardbass', 145, 165, 150, 4],
+    ['Russian hardbass', 150, 160, 155, 4],
   ]) {
     assert.equal(songBpm(30, name), lo);
     assert.equal(songBpm(80, name), (lo + hi) / 2);
@@ -47,9 +47,9 @@ test('genre grids are valid and variants change musical content', () => {
         for (const cell of cells) {
           if (voice !== 'drums') {
             if (cell !== null) {
-            const degrees = voice === 'pad' ? cell.degrees : [cell.degree];
+            const degrees = voice === 'pad' ? (cell.degrees ?? []) : [cell.degree];
             assert.ok(degrees.every(Number.isInteger));
-            assert.ok(Number.isInteger(cell.octave));
+            assert.ok(cell.octave === undefined || Number.isInteger(cell.octave));
             assert.ok(Number.isFinite(cell.gate) && cell.gate > 0);
             assert.ok(Number.isFinite(cell.velocity) && cell.velocity >= 0 && cell.velocity <= 1);
             }
@@ -463,17 +463,18 @@ test('audio repeat uses live tempo for duration and garage swing timing', () => 
   audio.handlers.frame(fingerFrame);
   audio.repeats[0](0);
   const first = audio.created[0].events.find(({ voice }) => voice === 'bass');
-  assert.equal(first.p.duration, 60 / songBpm(75, 'French house') / 4 * 2);
+  assert.equal(first.p.duration, 60 / songBpm(75, 'French house') / 4 * 1);
 
   audio.handlers.kit('UK garage');
   for (let i = 0; i < 16; i++) audio.repeats[0](0.125 + i * 0.125);
   audio.repeats[0](2.125);
   audio.repeats[0](2.25);
   audio.repeats[0](2.375);
-  const garage = audio.created[1].events.find(({ voice, time }) => voice === 'bass' && time > 2.3);
   const stepSeconds = 60 / audio.transport.bpm.value / 4;
+  const swung = audio.created[1].events.find(({ voice, time }) => voice === 'drums' && time > 2.3);
+  assert.ok(Math.abs(swung.time - (2.375 + 0.3 * stepSeconds)) < 1e-12);
+  const garage = audio.created[1].events.find(({ voice }) => voice === 'bass');
   assert.ok(Math.abs(garage.p.duration - stepSeconds) < 1e-12);
-  assert.ok(Math.abs(garage.time - (2.375 + 0.3 * stepSeconds)) < 1e-12);
 });
 
 test('rejected kit readiness silences only the active replacement', async () => {
@@ -718,7 +719,36 @@ for (const name of ['French house', 'UK garage', 'Russian hardbass']) {
         if (ev.voice === 'drums') continue;
         ev.params.notes.forEach((m) => assert.ok(scalePcs.includes(pc(m)), `${name} ${ev.voice} ${m} in scale`));
         if (ev.voice === 'lead' && step % 4 === 0) assert.ok(chordPcs(key, chord).includes(pc(ev.params.notes[0])));
+        if (ev.voice === 'pad') assert.deepEqual(new Set(ev.params.notes.map(pc)), new Set(chordPcs(key, chord)));
       }
     });
   });
+  test(`${name}: every bar has a bass note on the chord root`, () => {
+    const { key } = GENRES[name];
+    const steps = runSteps(name, 16 * GENRES[name].phraseBars * 2);
+    for (let bar = 0; bar < steps.length / 16; bar++) {
+      const root = chordPcs(key, key.chords[bar % key.chords.length])[0];
+      const bass = steps.slice(bar * 16, bar * 16 + 16).flat().filter((e) => e.voice === 'bass');
+      assert.ok(bass.some((e) => pc(e.params.notes[0]) === root), `${name} bar ${bar} bass root`);
+    }
+  });
 }
+
+test('genre signatures', () => {
+  const g = GENRES;
+  assert.notDeepEqual(g['UK garage'].patterns.drums[0].kick, g['French house'].patterns.drums[0].kick);
+  assert.equal(g['UK garage'].patterns.drums[0].kick[8], 0, 'UKG kick skips beat 3');
+  const pumpSteps = g['Russian hardbass'].patterns.bass[0].map((c, i) => (c ? i : -1)).filter((i) => i >= 0);
+  assert.deepEqual(pumpSteps, [2, 6, 10, 14]);
+  assert.ok(g['French house'].patterns.drums[0].openhat.every((w, i) => (w > 0) === (i % 4 === 2)));
+  for (const [name, pieces] of [['French house', ['kick', 'clap', 'hat', 'openhat']], ['UK garage', ['kick', 'snare', 'clap', 'hat', 'openhat', 'rim']], ['Russian hardbass', ['kick', 'clap', 'openhat']]]) {
+    for (const v of g[name].patterns.drums) assert.deepEqual(Object.keys(v).sort(), [...pieces].sort(), `${name} pieces`);
+  }
+});
+
+test('UKG ghost hats are quieter than full hats', () => {
+  assert.ok(GENRES['UK garage'].patterns.drums[0].hat.includes(0.5));
+  const hats = runSteps('UK garage', 16).map((evs, step) => [step, evs.find((e) => e.voice === 'drums' && e.params.drum === 'hat')]).filter(([, e]) => e);
+  const at = (step) => hats.find(([s]) => s === step)?.[1].params.velocity;
+  assert.ok(at(0) < at(1), `ghost ${at(0)} < full ${at(1)}`);
+});
