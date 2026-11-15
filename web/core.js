@@ -1,6 +1,6 @@
 // Sources -> per-channel signal -> 'frame' events. Owns connect/simulate and status.
 import { emit, on, VOICES } from './bus.js';
-import { bpmLine, connectSerial, sendLine, simChannels, simFill, simSensors, simTapped, startSim } from './serial.js';
+import { connectSerial, simChannels, simFill, simSensors, simTapped, startSim } from './serial.js';
 import { createChannel } from './signal.js';
 
 let stop = null;
@@ -8,10 +8,6 @@ let run = null;                   // latest requested run; older ones are stale
 let queue = Promise.resolve();    // starts run one at a time, so a stop never overlaps an open
 let channels = [];
 let filling = false;              // ?fill=sim is on (set at connect)
-
-const OLED_EVERY = 25;            // frames between BPM lines to the Pi's OLED: twice a second
-let frames = 0, avgHeart = 0;
-on('tempo', (t) => (avgHeart = t?.heart ?? 0));
 
 // A stand-in heartbeat (a clicked blob, below) is not a real reading, so it runs at about the average
 // of the real fingers' stabilised BPM and follows it. With no real reading yet it keeps its last rate.
@@ -27,8 +23,6 @@ function onFrame(raws) {
   const real = ch.filter((c, i) => !tapped[i] && c.finger && c.stable && c.bpm > 0).map((c) => c.bpm);
   if (real.length) standIn += (real.reduce((a, b) => a + b, 0) / real.length - standIn) * STAND_IN_FOLLOW;
   emit('frame', { raws, ch });
-  // With ?fill=sim the one real sensor is moved to another voice, so channel numbers no longer match the Pi's.
-  if (++frames % OLED_EVERY === 0 && !filling) sendLine(bpmLine(ch, avgHeart));
 }
 
 export function start(source) {

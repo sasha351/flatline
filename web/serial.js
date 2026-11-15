@@ -14,26 +14,12 @@ const anyPort = () => new URLSearchParams(globalThis.location?.search).get('port
 // The Pi sends this line once per press of the genre button (GPIO26, see pi/flatline.py).
 export const isButton = (line) => line.trim() === 'b';
 
-// The BPM the dashboard is showing, sent to the Pi so its OLED prints the same numbers and does not
-// run its own estimate: `h,b0,b1,b2,b3,avg`. A whole BPM per sensor and the average heart BPM;
-// 0 = no number on screen (no finger, or still calibrating).
-export const bpmLine = (ch, avg = 0) =>
-  `h,${ch.map((c) => (c.finger && c.stable && c.bpm > 0 ? Math.round(c.bpm) : 0)).join(',')},${Math.round(avg) || 0}`;
-
-let writer = null; // the open port's writer, for sendLine
-const encoder = new TextEncoder();
-// Send one line to the Pi. Does nothing with no port open (Simulate), and drops the line if the port is backed up.
-export function sendLine(line) {
-  if (writer && writer.desiredSize > 0) writer.write(encoder.encode(line + '\n')).catch(() => {});
-}
-
 export async function connectSerial(onFrame, onClose, onButton) {
   const port = await navigator.serial.requestPort(anyPort() ? {} : { filters: [PI_GADGET] });
   await port.open({ baudRate: 115200 }); // ignored by the gadget; the Arduino sketches use it
   const decoder = new TextDecoderStream();
   const piped = port.readable.pipeTo(decoder.writable).catch(() => {});
   const reader = decoder.readable.getReader();
-  const mine = writer = port.writable?.getWriter() ?? null;
 
   (async () => {
     let buf = '';
@@ -58,8 +44,6 @@ export async function connectSerial(onFrame, onClose, onButton) {
   })();
 
   return async () => {
-    if (writer === mine) writer = null;
-    try { mine?.releaseLock(); } catch { /* already released */ }
     await reader.cancel().catch(() => {});
     await piped;
     await port.close().catch(() => {});

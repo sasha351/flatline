@@ -121,7 +121,7 @@ Pick a kit and let the hearts do the rest:
 
 To add a kit, add a genre to `web/audio/patterns.js` and a kit of the same name to `web/audio/kits.js`; both files say how at the end of their tables.
 
-**BPM and tempo.** A finger's BPM appears once it has stabilised, about 8 s after a still finger lands; until then its number is a shimmering placeholder and it does not steer the music. The song's tempo is twice the average heart rate of every stabilised finger. It moves in whole BPM, only once the average has shifted by 2 heart BPM, only at a bar line, and it holds for 8 s after the last finger lifts. The dashboard shows both as **song bpm** and **avg heart bpm** (rules and knobs: `web/audio/tempo.js`, `web/signal.js`). While the browser is connected, the Pi's OLED prints the same BPM numbers as the dashboard.
+**BPM and tempo.** A finger's BPM appears once it has stabilised, about 8 s after a still finger lands; until then its number is a shimmering placeholder and it does not steer the music. The song's tempo is twice the average heart rate of every stabilised finger. It moves in whole BPM, only once the average has shifted by 2 heart BPM, only at a bar line, and it holds for 8 s after the last finger lifts. The dashboard shows both as **song bpm** and **avg heart bpm** (rules and knobs: `web/audio/tempo.js`, `web/signal.js`).
 
 Each active sensor evolves its voice from its recent signal history and the shared musical grid. Kit choice is the only creative control; everything else is operational. Pulse amplitude and beat-interval variation are bounded modulation sources, not calibrated finger-pressure or breathing-rate readings.
 

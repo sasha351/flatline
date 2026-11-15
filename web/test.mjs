@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { bpmLine, isButton, parseLine, simChannels, simFill, simSensors, simTapped } from './serial.js';
+import { isButton, parseLine, simChannels, simFill, simSensors, simTapped } from './serial.js';
 
 assert.deepEqual(parseLine('1,2,3,4'), [1, 2, 3, 4]);
 assert.deepEqual(parseLine('100000,0,262143,5\r'), [100000, 0, 262143, 5]);
@@ -9,9 +9,6 @@ assert.equal(parseLine('3,4\n1,2'), null);    // partial / garbage
 assert.equal(parseLine(''), null);
 assert.equal(parseLine('b'), null);         // the Pi's button line is not a frame
 assert.ok(isButton('b') && isButton('b\r') && !isButton('1,2,3,4') && !isButton(''));
-// the OLED gets exactly the numbers on the dashboard: nothing for a missing finger or a calibrating one
-assert.equal(bpmLine([{ finger: true, stable: true, bpm: 71.6 }, { finger: true, stable: false, bpm: 97 }, { finger: false, stable: false, bpm: 0 }, { finger: true, stable: true, bpm: 80.2 }], 75.7), 'h,72,0,0,80,76');
-assert.equal(bpmLine([{}, {}, {}, {}]), 'h,0,0,0,0,0');
 {
   // simFill: zeros (missing sensors) become simulated pulses, real values pass through
   const out = [];

@@ -7,7 +7,7 @@ Working notes for the `SamAloneTime` branch. The branch covers four requests fro
 3. Make the OLED heart-rate display consistent with the dashboard's.
 4. Give the BPM setter more rules and consistency, and maybe add a song BPM and an average heart BPM readout to the dashboard.
 
-Status (2026-11-14): all four are built on this branch and pass the repo's tests and replays of the recordings. Not yet tried on the real sensors or the real OLED: see "Still to test" at the bottom.
+Status (2026-11-14): points 1, 2 and 4 are built on this branch (3, the OLED, is left as it is at Sam's request) and pass the repo's tests and replays of the recordings. Not yet tried on the real sensors: see "Still to test" at the bottom.
 
 ## Test setup: two sensors
 
@@ -68,7 +68,7 @@ Proposed rules:
 
 1. The tempo follows the mean of all stabilised fingers, not the drum finger alone.
 2. Squeeze stays out of this branch (below).
-3. OLED: Claude went with browser-sent BPM (its recommendation; Sam has not confirmed this one).
+3. OLED: no change. Claude first built a browser-sent BPM link; Sam rejected it on 2026-11-15 and it was removed.
 
 ## What was built
 
@@ -104,14 +104,12 @@ On the two play logs (sensors 1-3 together): 21-40 changes a minute before, 8-10
 
 **Readouts** (`#tempo` in `web/index.html`): "song bpm" and "avg heart bpm" under the header, from the new `tempo` bus event.
 
-**OLED** (`web/serial.js` `bpmLine`/`sendLine`, `web/core.js`, `pi/flatline.py`, `pi/oled.py`). Twice a second the browser sends `h,b0,b1,b2,b3,avg`: the numbers on the dashboard, 0 where it shows none. The OLED prints those (and `avg` on the merged ball) for as long as they keep arriving, and falls back to its own older estimate 2 s after they stop. Not sent in `?fill=sim` mode, where channel numbers do not match the Pi's.
+**OLED: left alone.** Sam (2026-11-15): do not edit the OLED or send it numbers; it works fine as is. The browser-to-OLED BPM link that was built here was removed again, and `pi/oled.py` and `pi/flatline.py` are back to what they were (the genre button is kept). So the OLED still runs its own older estimate and can disagree with the dashboard (section 3); that is accepted. Do not change the OLED without asking.
 
 ## Still to test
 
 - **On the real sensors (1 and 4):** how long the ghost lasts, whether the number is steady once shown, how the song tempo feels. Everything above was measured on recordings and the simulator.
-- **OLED:** the new `pi/flatline.py` and `pi/oled.py` are not on the Pi yet. Install: `scp pi/flatline.py pi/oled.py flatline:/tmp/`, then on the Pi `sudo install -m 755 /tmp/flatline.py /tmp/oled.py /opt/flatline/ && sudo systemctl restart flatline`. `python3 pi/oled.py --selftest` passes off the Pi.
 - The ghost and readouts were checked once in headless Chrome with `?demo`; the shimmer itself has not been watched in motion.
-- The OLED's own detector (no browser connected) is unchanged and still shows the wild numbers from section 3.
 
 ## More kits (2026-11-14)
 
