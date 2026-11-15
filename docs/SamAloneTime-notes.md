@@ -66,3 +66,7 @@ Proposed rules:
 2. OLED fix: browser-sent BPM, or a re-port of the detector?
 
 Suggested build order: 2, then 4, then 3 (the "stabilised" flag from 2 feeds the other two).
+
+## Squeeze is kept out of this branch
+
+The experimental squeeze-for-volume work (`?squeeze`) is not on `SamAloneTime`, so it cannot affect the BPM tests. It is on the `squeeze-experiment` branch as a single commit on top of this branch's "Pi genre button" commit: `git diff SamAloneTime squeeze-experiment` (at the time it was split) is exactly the squeeze change.
