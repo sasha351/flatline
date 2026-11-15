@@ -1,6 +1,6 @@
 // Sound kits. A kit is a spec of voice presets; makeKit turns it into a builder
 // `(out) => Kit` whose instruments connect only to `out`.
-// Kit = { drums, bass, lead, pad, update(hearts, t), lift(voice), silence(), dispose(), ready, tail }.
+// Kit = { drums, bass, lead, pad, update(hearts, t), level(voice, gain, t), lift(voice), silence(), dispose(), ready, tail }.
 // Each voice is (params, heart, time) => void, where heart is that finger's heart.js state.
 import * as Tone from 'https://cdn.jsdelivr.net/npm/tone@15.0.4/+esm';
 
@@ -447,11 +447,17 @@ function makeKit(spec) {
     const depth = spec.pump === true ? 0.62 : spec.pump;
     const pump = spec.pump ? add(new Tone.Gain(1)).connect(dest) : null;
     const voiceDest = pump ?? dest;
-    const ctx = { add, dest: voiceDest, verb };
-    const d = drums(ctx, spec.drums);
-    const b = bass(ctx, spec.bass);
-    const l = lead(ctx, spec.lead);
-    const p = pad(ctx, spec.pad);
+    // Each voice gets its own level on the way to the bus and to the reverb (see level() below).
+    const levels = {};
+    const ctx = (voice) => {
+      const dry = add(new Tone.Gain(1)).connect(voiceDest), wet = add(new Tone.Gain(1)).connect(verb);
+      levels[voice] = [dry, wet];
+      return { add, dest: dry, verb: wet };
+    };
+    const d = drums(ctx('drums'), spec.drums);
+    const b = bass(ctx('bass'), spec.bass);
+    const l = lead(ctx('lead'), spec.lead);
+    const p = pad(ctx('pad'), spec.pad);
     return {
       drums: (params, heart, t) => d.play(params, t),
       bass: b.play,
@@ -469,6 +475,12 @@ function makeKit(spec) {
             pump.gain.linearRampToValueAtTime(1, t + 0.18);
           }
         }
+      },
+      level(voice, g, t) { // finger pressure (?squeeze). Only a real change is scheduled: this is called every 16th.
+        const l = levels[voice];
+        if (!l || Math.abs(g - (l.g ?? 1)) < 0.01) return;
+        l.g = g;
+        l.forEach((n) => n.gain.setTargetAtTime(g, t, 0.05));
       },
       lift(voice) { if (voice === 'pad') p.silence(); }, // finger lifted: pad releases now
       silence() { b.silence(); l.silence(); p.silence(); },

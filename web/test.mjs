@@ -211,7 +211,7 @@ import { start } from './core.js';
   assert.deepEqual(got.raws, [100000, 0, 0, 0]);
   assert.equal(got.ch.length, 4);
   assert.ok(got.ch[0].finger && !got.ch[1].finger);
-  assert.deepEqual(Object.keys(got.ch[0]).sort(), ['ac', 'amp', 'beat', 'bpm', 'finger', 'held', 'inst']);
+  assert.deepEqual(Object.keys(got.ch[0]).sort(), ['ac', 'amp', 'beat', 'bpm', 'finger', 'held', 'inst', 'level']);
   assert.deepEqual(status, ['idle', 'running']);
 }
 {
@@ -338,6 +338,33 @@ assert.deepEqual(simSensors(''), []);             // no broken sensors: nothing 
 assert.deepEqual(simSensors('?sim=none'), []);
 assert.deepEqual(simSensors('?sim=2,4,9'), [1, 3]);
 console.log('simChannels ok');
+
+import { createSqueeze, squeezeGain, SQUEEZE_DEAD, SQUEEZE_RANGE } from './audio/squeeze.js';
+
+{
+  // squeeze: 0 while landing and at rest, rises with the level, resets on lift, forgets a long hold
+  const sq = createSqueeze(50), ch = createChannel(50);
+  const hold = (level, secs, x) => { for (let i = 0; i < 50 * secs; i++) x = sq(ch(Math.round(level + 300 * Math.sin(i * 0.15)))); return x; };
+  assert.equal(hold(100000, 1, 0), 0, 'landing is not a squeeze');
+  assert.ok(hold(100000, 5) < 0.1, 'resting touch');
+  const half = hold(100000 * (1 + (SQUEEZE_DEAD + SQUEEZE_RANGE) / 2), 2);
+  assert.ok(half > 0.35 && half < 0.55, `half squeeze: ${half}`);
+  assert.equal(hold(100000 * (1 + 2 * SQUEEZE_RANGE), 2), 1, 'clamped at a full squeeze');
+  assert.ok(hold(100000, 2) < 0.1, 'easing off drops it');
+  assert.ok(hold(106000, 90) < 0.1, 'a level held for a long time becomes the resting touch');
+  assert.equal(hold(500, 1), 0, 'finger off');
+  assert.equal(sq({ finger: true }), 0, 'no level, no squeeze');
+  hold(100000, 4); hold(500, 0.3);                    // resting, then contact slips for 0.3 s...
+  assert.equal(hold(119000, 2), 1, 'landing back harder after a slip is still a squeeze');
+  hold(100000, 3); hold(60000, 0.5);                  // (back to rest) a half-lifted finger dips the level for 0.5 s...
+  assert.ok(hold(100000, 3) < 0.1, 'a short dip does not turn the resting level into a squeeze');
+  hold(85000, 3);                                     // eased off for good: the lighter level becomes rest
+  assert.equal(hold(100000, 2), 1, 'pressing from the new, lighter rest');
+  hold(500, 2);                                       // a real lift forgets the resting level
+  assert.ok(hold(119000, 4) < 0.1, 'a new press starts at rest');
+  assert.ok(Math.abs(squeezeGain(1) / squeezeGain(0) - 8) < 1e-9 && squeezeGain(1) <= 1);
+}
+console.log('squeeze ok');
 
 {
   // simTapped: a tapped channel gets a pulse the detector reads at the chosen rate; others pass through

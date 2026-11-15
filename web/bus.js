@@ -3,7 +3,7 @@
 // contract/* branch (see docs/superpowers/plans/2026-11-14-flatline.md).
 //
 // event      from   detail
-// frame      core   { raws: number[4], ch: {finger, ac, beat, bpm, amp, inst, held}[4] }   ~50 Hz
+// frame      core   { raws: number[4], ch: {finger, ac, beat, bpm, amp, inst, held, level}[4] }   ~50 Hz
 //                   held: that raw reading was a bad read, replaced by the last good one
 // status*    core   'idle' | 'running' | 'disconnected' | 'error: <message>'
 // connect    ui     none. Emit inside the click handler (needs a user gesture).
@@ -17,6 +17,7 @@
 // button     core   none. The Pi's push button was pressed: the UI steps to the next kit.
 // tap        ui     0..3: that voice's blob was clicked (core toggles a stand-in heartbeat for an unplugged sensor)
 // tapped     core   boolean[4]: which voices are played by a stand-in heartbeat
+// squeeze    audio  { squeeze: 0..1, gain }[4], a few times a second, only with ?squeeze (experimental)
 //
 // * sticky: a late subscriber gets the last value immediately.
 // Listeners ignore fields and values they don't know, so either side can add some.

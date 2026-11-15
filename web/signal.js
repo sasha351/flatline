@@ -142,7 +142,7 @@ export function createChannel(rate = 50, { filter = true } = {}) {
     if (raw < FINGER_MIN) {
       dc = null; env = 0; bpm = 0; inst = 0; recent = []; prevAc = 0; k = 0; armed = true; lastBeat = -Infinity; bad = 0;
       rn = 0; locked = false; jump = 0;
-      return { finger: false, ac: 0, beat: false, bpm: 0, amp: 0, inst: 0, held: false };
+      return { finger: false, ac: 0, beat: false, bpm: 0, amp: 0, inst: 0, held: false, level: 0 };
     }
     if (!held) good = raw;
     if (dc === null) { dc = raw; lp = raw; hp = biquad('hp', PULSE_LO, rate); lpf = biquad('lp', PULSE_HI, rate); }
@@ -177,6 +177,7 @@ export function createChannel(rate = 50, { filter = true } = {}) {
     }
     // amp: pulse envelope (finger pressure). inst: BPM of the latest beat, 0 until two beats.
     // held: this reading was a bad read, replaced by the last good one.
-    return { finger: true, ac, beat, bpm, amp: env, inst, held };
+    // level: the lightly smoothed reading; it rises as the finger presses harder (audio/squeeze.js).
+    return { finger: true, ac, beat, bpm, amp: env, inst, held, level: lp };
   };
 }

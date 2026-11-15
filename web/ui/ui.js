@@ -97,3 +97,14 @@ setInterval(() => {
 }, 1000);
 
 on('kits', (names) => $('kit').replaceChildren(...names.map((n) => new Option(n))));
+
+// Experimental (?squeeze): a plain readout of each finger's squeeze and the volume it sets, to check the reading by eye.
+let squeezeBox = null;
+on('squeeze', (list) => {
+  if (!squeezeBox) {
+    squeezeBox = document.body.appendChild(document.createElement('pre'));
+    squeezeBox.style.cssText = 'position:fixed;left:8px;bottom:8px;margin:0;padding:6px 10px;z-index:99;font:14px/1.4 monospace;color:#fff;background:rgba(0,0,0,.7);border-radius:6px;pointer-events:none';
+  }
+  squeezeBox.textContent = 'squeeze (0 light .. 1 hard) -> volume\n' + list.map((q, i) =>
+    `${VOICES[i].padEnd(6)} ${q.squeeze.toFixed(2)} ${'#'.repeat(Math.round(q.squeeze * 10)).padEnd(10)} x${q.gain.toFixed(2)}`).join('\n');
+});

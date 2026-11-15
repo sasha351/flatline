@@ -8,6 +8,7 @@ import { GENRES } from './audio/patterns.js';
 import { createTempo, songBpm } from './audio/tempo.js';
 import { phraseSeed, note, SCALE, ROOT } from './audio/mapping.js';
 import { createEvolution, snapToChord } from './audio/evolution.js';
+import { createSqueeze, squeezeGain } from './audio/squeeze.js';
 import { rng, makeMotif, develop } from './audio/melody.js';
 
 const names = ['French house', 'UK garage', 'Ambient', 'Russian hardbass'];
@@ -370,7 +371,7 @@ test('audio lifecycle schedules the selected genre through one persistent repeat
   const active = { on: true, settled: true, hr: 75, press: 0.5, breath: 0 };
   const env = {
     Tone, KITS, VOICES, HEART_OFF, createHeart: () => (channel) => channel?.finger ? active : HEART_OFF,
-    createTempo, createEvolution, GENRES,
+    createTempo, createEvolution, GENRES, createSqueeze, squeezeGain,
     emit: (type, detail) => emitted.push([type, detail]),
     on: (type, fn) => { handlers[type] = fn; },
     setTimeout() {},
@@ -469,7 +470,7 @@ function createAudioHarness({ readyFor = () => Promise.resolve(), evolutionFacto
   const env = {
     Tone, KITS, VOICES, HEART_OFF,
     createHeart: () => (channel) => channel?.finger ? active : HEART_OFF,
-    createTempo, createEvolution: evolutionFactory, GENRES,
+    createTempo, createEvolution: evolutionFactory, GENRES, createSqueeze, squeezeGain,
     emit: (type, detail) => emitted.push([type, detail]),
     on: (type, fn) => { handlers[type] = fn; },
     setTimeout,

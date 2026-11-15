@@ -120,6 +120,7 @@ Each active sensor evolves its voice from its recent signal history and the shar
 Handy URL tricks:
 - **Not all four sensors wired?** `?fill=sim` simulates the channels that read `0`. The real ones play from your fingers.
 - **A sensor died?** `?sim=4` (or `?sim=3,4`) simulates it for one visit. List it in `BROKEN_SENSORS` in `web/serial.js` to make that the default. A simulated sensor plays a heartbeat whenever every working sensor has a finger on it, so the four can still merge.
+- **Experimental: squeeze for volume.** `?squeeze` makes a voice louder as its finger presses harder (it reads the rise in light level; see `web/audio/squeeze.js`).
 
 ## Test
 ```bash

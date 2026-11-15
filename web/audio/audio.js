@@ -6,8 +6,11 @@ import { createHeart, HEART_OFF } from './heart.js';
 import { createTempo } from './tempo.js';
 import { GENRES } from './patterns.js';
 import { createEvolution } from './evolution.js';
+import { createSqueeze, squeezeGain } from './squeeze.js';
 
 const [DRUMS, BASS, LEAD, PAD] = [0, 1, 2, 3];
+// Experimental: open the page with ?squeeze and pressing a finger harder makes its voice louder.
+const SQUEEZE = /[?&]squeeze\b/.test(globalThis.location?.search ?? '');
 const master = new Tone.Gain();
 const comp = new Tone.Compressor({ threshold: -18, ratio: 3, attack: 0.01, release: 0.2 });
 const limiter = new Tone.Limiter(-1);
@@ -24,6 +27,8 @@ let failedKit = false;
 let pendingName = null;
 let trackers;
 let hearts;
+let squeezers;
+let squeezes;
 let tempo;
 let target;
 let evolution;
@@ -37,6 +42,8 @@ transport.bpm.value = GENRES[defaultName].tempo.default;
 function resetState() {
   trackers = VOICES.map(() => createHeart(50));
   hearts = VOICES.map(() => HEART_OFF);
+  squeezers = VOICES.map(() => createSqueeze(50));
+  squeezes = VOICES.map(() => 0);
   tempo = createTempo(activeName);
   target = GENRES[activeName].tempo.default;
   evolution = createEvolution(activeName);
@@ -45,6 +52,8 @@ function resetState() {
 }
 resetState();
 
+let standIn = [];
+on('tapped', (list) => (standIn = list));
 on('frame', ({ raws, ch }) => {
   last = raws;
   const nextHearts = ch.map((channel, index) => trackers[index](channel));
@@ -52,6 +61,12 @@ on('frame', ({ raws, ch }) => {
     if (hearts[index]?.on && !heart.on) kit.lift(VOICES[index]);
   });
   hearts = nextHearts;
+  if (SQUEEZE) {
+    squeezes = ch.map((channel, index) => squeezers[index](channel));
+    // The pulse-size "press" works against the squeeze: a hard press shrinks the pulse (softer hits)
+    // and any change of grip is a burst of it (louder hits). With ?squeeze it stays neutral.
+    hearts = hearts.map((heart) => (heart.on ? { ...heart, press: 0.5 } : heart));
+  }
 });
 
 function disposeLater(old) {
@@ -106,6 +121,9 @@ const repeat = (time) => {
     transport.bpm.rampTo(target, (8 * 60) / transport.bpm.value, time);
   }
   kit.update(Object.fromEntries(VOICES.map((voice, index) => [voice, hearts[index]])), time, s);
+  // a stand-in heartbeat has no finger to squeeze: it plays at the normal level
+  if (SQUEEZE) VOICES.forEach((voice, index) => kit.level?.(voice, standIn[index] ? 1 : squeezeGain(squeezes[index]), time));
+  if (SQUEEZE && s % 4 === 0) emit('squeeze', squeezes.map((x) => ({ squeeze: x, gain: squeezeGain(x) })));
   const stepSeconds = Tone.Time('16n').toSeconds();
   const events = evolution.next({ raws: last, hearts, stepSeconds });
   events.forEach((event) => {
