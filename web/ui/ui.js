@@ -54,6 +54,8 @@ on('status', (s) => {
   $('banner').hidden = !(err || s === 'disconnected');
   $('reconnect').hidden = noSerial;
   $('idle').hidden = s !== 'idle';
+  $('tempo').hidden = s !== 'running';
+  if (s !== 'running') $('songbpm').textContent = $('avgbpm').textContent = '--';
   $('unsup').hidden = !noSerial || s === 'running'; // don't cover the traces during Simulate
   enable();
 });
@@ -92,8 +94,14 @@ setInterval(() => {
   const live = last && performance.now() - lastAt < 500;
   VOICES.forEach((v, i) => {
     const ch = live ? last.ch?.[i] : null, bpm = Math.round(ch?.bpm);
-    sr.children[i].textContent = ch?.finger ? `${v}: finger on, ${bpm > 0 ? bpm + ' BPM' : 'no BPM yet'}` : `${v}: no finger`;
+    sr.children[i].textContent = ch?.finger ? `${v}: finger on, ${ch.stable && bpm > 0 ? bpm + ' BPM' : 'finding pulse'}` : `${v}: no finger`;
   });
 }, 1000);
+
+// Song tempo and the average heart rate that sets it (audio/tempo.js). No hearts: the song runs at the kit's own tempo.
+on('tempo', ({ song, heart }) => {
+  $('songbpm').textContent = Math.round(song);
+  $('avgbpm').textContent = heart > 0 ? Math.round(heart) : '--';
+});
 
 on('kits', (names) => $('kit').replaceChildren(...names.map((n) => new Option(n))));

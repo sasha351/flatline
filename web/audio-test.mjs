@@ -5,7 +5,7 @@ import { runInNewContext } from 'node:vm';
 import { HEART_OFF } from './audio/heart.js';
 import { VOICES } from './bus.js';
 import { GENRES } from './audio/patterns.js';
-import { createTempo, songBpm } from './audio/tempo.js';
+import { createTempo, songBpm, STEP, HOLD_S } from './audio/tempo.js';
 import { phraseSeed, note, SCALE, ROOT } from './audio/mapping.js';
 import { createEvolution, snapToChord } from './audio/evolution.js';
 import { rng, makeMotif, develop } from './audio/melody.js';
@@ -24,7 +24,7 @@ test('genre names, tempo ranges, defaults, phrase lengths, and swing', () => {
     ['Ambient', 72, 8],
     ['Russian hardbass', 155, 4],
   ]) {
-    assert.equal(createTempo(name)(HEART_OFF), def);
+    assert.deepEqual(createTempo(name)([HEART_OFF, HEART_OFF, HEART_OFF, HEART_OFF], 0.1), { song: def, heart: 0 });
     assert.equal(GENRES[name].phraseBars, bars);
   }
   assert.equal(GENRES['UK garage'].swing, 0.30);
@@ -81,16 +81,23 @@ test('genre identity and ambient density constraints', () => {
   }
 });
 
-test('genre tempo follower locks, ignores jitter, follows movement, and releases', () => {
+test('tempo follows the average of the stabilised hearts: lock, dead band, hold, release', () => {
   const tempo = createTempo('Ambient');
-  const heart = (on, settled, hr) => ({ on, settled, hr });
-  assert.equal(tempo(HEART_OFF), 72);
-  assert.equal(tempo(heart(true, false, 72)), 72);
-  assert.equal(tempo(heart(true, true, 72)), songBpm(72));
-  assert.equal(tempo(heart(true, true, 72.2)), songBpm(72));
-  assert.equal(tempo(heart(true, true, 72.5)), songBpm(72.5));
-  assert.equal(tempo(heart(true, true, 78)), songBpm(78));
-  assert.equal(tempo(HEART_OFF), 72);
+  const heart = (hr, settled = true) => ({ on: true, settled, hr });
+  const run = (hearts, secs) => { let r; for (let i = 0; i < secs * 10; i++) r = tempo(hearts, 0.1); return r; };
+  assert.deepEqual(run([HEART_OFF, HEART_OFF], 1), { song: 72, heart: 0 });
+  assert.deepEqual(run([heart(90, false), HEART_OFF], 1), { song: 72, heart: 0 }, 'a calibrating finger does not count');
+  assert.deepEqual(tempo([heart(70), heart(80), heart(120, false), HEART_OFF], 0.1), { song: 150, heart: 75 }, 'locks to twice the mean');
+  assert.equal(run([heart(71), heart(80)], 60).song, 150, 'a 0.5 BPM shift of the average stays inside the dead band');
+  const moved = run([heart(80), heart(80)], 60);
+  assert.ok(Math.abs(moved.heart - 80) < 0.1 && Math.abs(moved.song - 160) < STEP, `follows a real change: ${moved.song}`);
+  assert.ok(Number.isInteger(moved.song));
+  const jump = tempo([heart(80), heart(120)], 0.1);
+  assert.ok(jump.heart < 81 && jump.song === moved.song, 'one reading far off barely moves the average');
+  const held = run([HEART_OFF, HEART_OFF], HOLD_S - 1);
+  assert.equal(held.song, moved.song, 'all fingers off: the tempo holds');
+  assert.ok(held.heart > 79);
+  assert.deepEqual(run([HEART_OFF, HEART_OFF], 2), { song: 72, heart: 0 }, 'then the genre default returns');
 });
 
 const settled = (press = 0.5, breath = 0, hr = 75) => ({ on: true, settled: true, hr, press, breath });

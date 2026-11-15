@@ -7,7 +7,11 @@ Working notes for the `SamAloneTime` branch. The branch covers four requests fro
 3. Make the OLED heart-rate display consistent with the dashboard's.
 4. Give the BPM setter more rules and consistency, and maybe add a song BPM and an average heart BPM readout to the dashboard.
 
-Status: investigation done, nothing built yet.
+Status (2026-11-14): all four are built on this branch and pass the repo's tests and replays of the recordings. Not yet tried on the real sensors or the real OLED: see "Still to test" at the bottom.
+
+## Test setup: two sensors
+
+Sensors 2 and 3 got unplugged, so every hardware test on this branch is run on two sensors: **sensor 1 (drums) and sensor 4 (pad)**. Bass and lead can be played by a stand-in heartbeat (click their blob after connecting). A stand-in runs at a random 60-100 BPM, so it is left out of the average heart rate and the song tempo.
 
 ## 1. BPM variation (measured)
 
@@ -60,12 +64,54 @@ Proposed rules:
 - Hold the last tempo for a few seconds after a finger lifts.
 - Show "song BPM" and "avg heart BPM" on the dashboard.
 
-## Open decisions
+## Decisions (Sam, 2026-11-14)
 
-1. Which hearts set the tempo: the drum finger averaged over time, or the mean of all stabilised fingers?
-2. OLED fix: browser-sent BPM, or a re-port of the detector?
+1. The tempo follows the mean of all stabilised fingers, not the drum finger alone.
+2. Squeeze stays out of this branch (below).
+3. OLED: Claude went with browser-sent BPM (its recommendation; Sam has not confirmed this one).
 
-Suggested build order: 2, then 4, then 3 (the "stabilised" flag from 2 feeds the other two).
+## What was built
+
+**Stabilised flag** (`web/signal.js`, frame field `stable`). True once the BPM has stayed within 3 BPM for 3 s after the quality filter locks. A finger too shaky to lock counts after its beat-median BPM holds for 6 s. It stays true until the finger lifts. Knobs: `STABLE_S`, `STABLE_LOOSE_S`, `STABLE_BPM`.
+
+| Recording | Number appears after | Range shown afterwards (was) |
+|---|---|---|
+| touch4 (clean) | 8.0 s | 69-79 (69-79) |
+| touch3 (shaky) | 7.5 s | 72-79 (72-90) |
+| touch2 (clean) | 14.0 s | 77-83 (75-99) |
+| touch1 (shaky) | 14.5 s | 68-92 (68-92) |
+
+The bad opening numbers (97-99, 90) are no longer shown. touch1 never locks, so it still wanders once shown.
+
+**Ghost animation** (`web/ui/stage.js`, `.bpm.ghost` in `web/ui/style.css`). Finger on but not stable: a shimmering bar in place of the number, label "finding your pulse". The four blobs only merge once all four are stable. `heart.js` `settled` now means "stable", so a calibrating BPM does not steer the music either.
+
+**Tempo rules** (`web/audio/tempo.js`, applied in `web/audio/audio.js`):
+- average heart = mean of the stabilised fingers, smoothed over 10 s (`AVG_S`)
+- song = 2 x average, in whole BPM
+- it moves only when 2 x average is 4 or more song BPM away (`STEP`)
+- a new tempo starts at a bar line and glides in over 2 bars
+- with every finger off it holds for 8 s (`HOLD_S`), then returns to the kit's default
+- stand-in heartbeats do not count
+
+| Recording | Song range before | after | Tempo changes before | after |
+|---|---|---|---|---|
+| touch4 | 138-158 | 150 | 35 in 25 s | 0 in 22 s |
+| touch3 | 144-179 | 146-158 | 15 in 26 s | 3 in 23 s |
+| touch2 | 150-198 | 153-157 | 36 in 26 s | 1 in 16 s |
+| touch1 | 136-185 | 156-164 | 20 in 27 s | 4 in 16 s |
+
+On the two play logs (sensors 1-3 together): 21-40 changes a minute before, 8-10 after.
+
+**Readouts** (`#tempo` in `web/index.html`): "song bpm" and "avg heart bpm" under the header, from the new `tempo` bus event.
+
+**OLED** (`web/serial.js` `bpmLine`/`sendLine`, `web/core.js`, `pi/flatline.py`, `pi/oled.py`). Twice a second the browser sends `h,b0,b1,b2,b3,avg`: the numbers on the dashboard, 0 where it shows none. The OLED prints those (and `avg` on the merged ball) for as long as they keep arriving, and falls back to its own older estimate 2 s after they stop. Not sent in `?fill=sim` mode, where channel numbers do not match the Pi's.
+
+## Still to test
+
+- **On the real sensors (1 and 4):** how long the ghost lasts, whether the number is steady once shown, how the song tempo feels. Everything above was measured on recordings and the simulator.
+- **OLED:** the new `pi/flatline.py` and `pi/oled.py` are not on the Pi yet. Install: `scp pi/flatline.py pi/oled.py flatline:/tmp/`, then on the Pi `sudo install -m 755 /tmp/flatline.py /tmp/oled.py /opt/flatline/ && sudo systemctl restart flatline`. `python3 pi/oled.py --selftest` passes off the Pi.
+- The ghost and readouts were checked once in headless Chrome with `?demo`; the shimmer itself has not been watched in motion.
+- The OLED's own detector (no browser connected) is unchanged and still shows the wild numbers from section 3.
 
 ## Squeeze is kept out of this branch
 

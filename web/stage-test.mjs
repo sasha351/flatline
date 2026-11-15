@@ -31,7 +31,7 @@ function stage(noFluid = false) {
   return { els, media, env, loaded, sizes, get latest() { return latest; }, get lane() { return lane; }, get paths() { return paths; },
     tick(ms) { now = ms; raf(ms); }, send(ms, ch) { now = ms; handlers.frame({ ch }); }, note: (voice) => handlers.note({ voice }), sensor: (i) => handlers.sensor(i) };
 }
-const ch = (beat = false, finger = true, bpm = 72, ac = 100) => ({ finger, beat, bpm, ac, amp: 100, inst: bpm });
+const ch = (beat = false, finger = true, bpm = 72, ac = 100) => ({ finger, beat, bpm, ac, amp: 100, inst: bpm, stable: bpm > 0 });
 const s = stage(); s.tick(16);
 assert.equal(s.els.text.children.length, 8, 'BPM and label use the DOM');
 assert.equal(s.loaded[0], '10px Fraunces, Georgia, serif');
@@ -39,10 +39,12 @@ assert.deepEqual(s.sizes.at(-1), [1200, 800, 2], 'DPR is capped');
 s.env.devicePixelRatio = 1.5; s.tick(17);
 assert.deepEqual(s.sizes.at(-1), [1200, 800, 1.5], 'DPR changes resize both canvases');
 s.sensor(0); s.send(20, [ch(true), ch(false, true, 0, 1000), ch(), ch()]);
-s.send(25, [ch(false, true, 72, -100), ch(false, true, 0, -1000), ch(), ch()]); s.tick(32);
+s.send(25, [ch(false, true, 72, -100), ch(false, true, 0, -1000), { ...ch(), stable: false }, ch()]); s.tick(32);
 assert.equal(s.els.text.children[0].textContent, 72);
 assert.equal(s.els.text.children[1].textContent, 'drums · bpm · sensor');
-assert.equal(s.els.text.children[2].textContent, '--', 'BPM waits for readiness');
+assert.equal(s.els.text.children[2].textContent, '00', 'a calibrating BPM is a ghost, not a number');
+assert.equal(s.els.text.children[3].textContent, 'bass · finding your pulse');
+assert.equal(s.els.text.children[4].textContent, '00', 'a BPM that is not stable yet stays hidden');
 assert.ok(s.latest.flash[0] > .95, 'beat survives an intervening non-beat frame');
 assert.equal(s.paths[0].length, 2);
 assert.equal(s.paths[0][0][1], s.paths[1][0][1], 'each trace uses its own maximum');

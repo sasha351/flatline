@@ -55,6 +55,16 @@ button:disabled { opacity: .4; cursor: default; }
 .bpm { font-family: var(--num); font-weight: var(--num-w); letter-spacing: var(--num-track); font-variant-numeric: tabular-nums; }
 .lab { font-family: var(--num); font-style: var(--lab-style); color: var(--muted); }
 .bpm.off { color: var(--line); }
+/* finger on, BPM still calibrating: the digits are hidden and a soft bar the size of the number shimmers in their place */
+.bpm.ghost { color: transparent; border-radius: .18em; background: linear-gradient(100deg, var(--line) 30%, var(--muted) 50%, var(--line) 70%) 0 0 / 300% 100%;
+  animation: ghost 1.6s linear infinite; opacity: .55; }
+@keyframes ghost { from { background-position: 100% 0; } to { background-position: 0 0; } }
+#tempo { position: absolute; z-index: 1; top: calc(11.5 * var(--u)); left: 0; right: 0; margin: 0; display: flex; justify-content: center; gap: calc(5 * var(--u)); pointer-events: none; }
+#tempo[hidden] { display: none; }
+#tempo div { display: flex; align-items: baseline; gap: calc(1 * var(--u)); }
+#tempo dt { font: var(--lab-style) 400 calc(1.9 * var(--u)) var(--num); color: var(--muted); }
+#tempo dd { margin: 0; min-width: 3ch; font: var(--num-w) calc(3.4 * var(--u)) var(--num); letter-spacing: var(--num-track); font-variant-numeric: tabular-nums; }
+.perf #tempo { top: calc(4 * var(--u)); }
 #hint { position: absolute; left: 0; right: 0; top: calc(75 * var(--u)); margin: 0; text-align: center; pointer-events: none; }
 #hint p { margin: 0; color: var(--muted); font: var(--lab-style) 400 calc(2.3 * var(--u)) var(--num); }
 #err { position: absolute; inset: 40% 10% auto; z-index: 9; font: 14px ui-monospace, monospace; color: #f66; white-space: pre-wrap; }

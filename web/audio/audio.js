@@ -26,6 +26,7 @@ let trackers;
 let hearts;
 let tempo;
 let target;
+let shown = ''; // the last 'tempo' event sent, so it only goes out on a change
 let evolution;
 let step = 0;
 let running = false;
@@ -42,9 +43,12 @@ function resetState() {
   evolution = createEvolution(activeName);
   step = 0;
   lastT = {};
+  shown = '';
 }
 resetState();
 
+let standIn = []; // channels played by a click-started stand-in heartbeat (core.js): not real hearts
+on('tapped', (list) => (standIn = list));
 on('frame', ({ raws, ch }) => {
   last = raws;
   const nextHearts = ch.map((channel, index) => trackers[index](channel));
@@ -99,11 +103,17 @@ const repeat = (time) => {
   if (s === 0 && pendingName) activate(pendingName, time);
   if (failedKit) return;
 
-  const next = tempo(hearts[DRUMS]);
-  if (next !== target || (s === 0 && next !== transport.bpm.value)) {
-    target = next;
+  // a stand-in heartbeat runs at a random rate, so it stays out of the average
+  const { song, heart } = tempo(hearts.map((h, index) => (standIn[index] ? HEART_OFF : h)), Tone.Time('16n').toSeconds());
+  if (s === 0 && song !== target) { // a new tempo starts at a bar line and glides in over 2 bars
+    target = song;
     transport.bpm.cancelScheduledValues(time);
     transport.bpm.rampTo(target, (8 * 60) / transport.bpm.value, time);
+  }
+  const readout = `${target},${Math.round(heart)}`;
+  if (readout !== shown) {
+    shown = readout;
+    emit('tempo', { song: target, heart: Math.round(heart) });
   }
   kit.update(Object.fromEntries(VOICES.map((voice, index) => [voice, hearts[index]])), time, s);
   const stepSeconds = Tone.Time('16n').toSeconds();

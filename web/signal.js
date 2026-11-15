@@ -65,6 +65,14 @@ const TRACK = 0.15;        // once locked, only a rate within +-15% of the BPM i
 const SLEW = 2;            // ponytail: and by at most this many BPM per estimate (4 BPM a second)
 const Q_JUMP = 0.6, JUMP_N = 6; // a different rate needs this quality JUMP_N estimates running (3 s) to take over
 const OCTAVE = 0.8;        // the fastest period scoring within this of the best wins (not its double)
+// Stabilised: the BPM has stayed within STABLE_BPM of where it was for STABLE_S once the quality
+// filter has locked. Until then the number is still calibrating: the dashboard shows a ghost and the
+// music ignores it. A shaky finger may never lock, so its beat-median BPM counts too, after holding
+// for the longer STABLE_LOOSE_S (the first median can sit 15-20 BPM high for 3 s on a landing finger).
+// Once a finger is stable it stays stable until it lifts.
+const STABLE_S = 3;        // ponytail: seconds the locked BPM must hold still
+const STABLE_LOOSE_S = 6;  // ponytail: the same, for a BPM that has not locked
+const STABLE_BPM = 3;      // ponytail: and within this many BPM
 
 // Normalised autocorrelation of w at each lag in [lo, hi]. r[lag - lo + 1]; one extra lag each side.
 function autocorr(w, lo, hi) {
@@ -92,9 +100,17 @@ export function createChannel(rate = 50, { filter = true } = {}) {
   const lagLo = Math.floor((60 * rate) / BPM_HI), lagHi = Math.ceil((60 * rate) / BPM_LO);
   const ring = new Float32Array(RN), lin = new Float32Array(RN);
   let rn = 0, locked = false, jump = 0, jumpBpm = 0;
+  let stable = false, ref = 0, calm = 0; // ref: the BPM the calm run is measured from; calm: estimates in that run
 
-  // One estimate from the window: follow the locked rate, take a first lock, or hold.
+  // One estimate from the window, then the stabilised check on the BPM it left.
   function estimate() {
+    track();
+    if (!bpm || stable) return;
+    if (Math.abs(bpm - ref) > STABLE_BPM) { ref = bpm; calm = 0; }
+    else if (++calm >= (locked ? STABLE_S : STABLE_LOOSE_S) / EST_S) stable = true;
+  }
+  // Follow the locked rate, take a first lock, or hold.
+  function track() {
     const m = Math.min(rn, RN), hi = Math.min(lagHi, Math.floor(m / CYCLES));
     if (hi <= lagLo) return;
     const w = lin.subarray(0, m);
@@ -141,8 +157,8 @@ export function createChannel(rate = 50, { filter = true } = {}) {
     }
     if (raw < FINGER_MIN) {
       dc = null; env = 0; bpm = 0; inst = 0; recent = []; prevAc = 0; k = 0; armed = true; lastBeat = -Infinity; bad = 0;
-      rn = 0; locked = false; jump = 0;
-      return { finger: false, ac: 0, beat: false, bpm: 0, amp: 0, inst: 0, held: false };
+      rn = 0; locked = false; jump = 0; stable = false; ref = 0; calm = 0;
+      return { finger: false, ac: 0, beat: false, bpm: 0, amp: 0, inst: 0, held: false, stable: false };
     }
     if (!held) good = raw;
     if (dc === null) { dc = raw; lp = raw; hp = biquad('hp', PULSE_LO, rate); lpf = biquad('lp', PULSE_HI, rate); }
@@ -177,6 +193,7 @@ export function createChannel(rate = 50, { filter = true } = {}) {
     }
     // amp: pulse envelope (finger pressure). inst: BPM of the latest beat, 0 until two beats.
     // held: this reading was a bad read, replaced by the last good one.
-    return { finger: true, ac, beat, bpm, amp: env, inst, held };
+    // stable: the BPM has locked and held still (see STABLE_S): safe to show and to drive the music.
+    return { finger: true, ac, beat, bpm, amp: env, inst, held, stable };
   };
 }

@@ -1,13 +1,12 @@
 // Per-finger heart features for the music. Pure: call the tracker once per frame
-// with that finger's `ch` ({ finger, beat, bpm, amp, inst }).
+// with that finger's `ch` ({ finger, beat, bpm, amp, inst, stable }).
 // Returns { on, settled, hr, press, breath }:
 //   hr      smoothed heart rate; HR_DEFAULT until settled
-//   settled true after SETTLE_BEATS beats since the finger landed
+//   settled true once the detector calls the BPM stable (signal.js): until then it is still calibrating
 //   press   pulse amplitude against this finger's own ~10 s average, 0..1 (0.5 = usual)
 //   breath  breathing swing (RSA): (inst - slow hr) / 10, -1..1; 0 until settled
 
 export const HR_DEFAULT = 75;
-export const SETTLE_BEATS = 4;
 export const HEART_OFF = Object.freeze({ on: false, settled: false, hr: HR_DEFAULT, press: 0.5, breath: 0 });
 
 const AMP_FLOOR = 20; // keeps press finite when the pulse almost vanishes
@@ -30,7 +29,7 @@ export function createHeart(rate = 50) {
     else if (slowAmp !== null) slowAmp += (ch.amp - slowAmp) * slowA;
     const press = slowAmp === null ? 0.5 : clamp(ch.amp / Math.max(slowAmp, AMP_FLOOR) - 0.5, 0, 1);
 
-    const settled = beats >= SETTLE_BEATS && ch.bpm > 0;
+    const settled = !!ch.stable && ch.bpm > 0;
     if (!settled) return { on: true, settled, hr: HR_DEFAULT, press, breath: 0 };
 
     const hr = ch.bpm;

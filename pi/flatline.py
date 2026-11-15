@@ -4,6 +4,7 @@
 Reads 4x MAX30102 (all fixed at 0x57), one per I2C bus, and streams raw IR as
 CSV: `ir0,ir1,ir2,ir3` at 50 Hz. A missing sensor reads 0. This is the same
 format the old Arduino sketch sent, so the web app doesn't change.
+The web app sends back `h,b0,b1,b2,b3,avg` lines (the BPM it is showing), which the OLED prints.
 A push button between GPIO26 (pin 37) and any GND sends a line `b` on each press:
 the web app steps to the next genre.
 
@@ -297,6 +298,13 @@ def main():
                             q.put_nowait(('n', int(v), drum, float(vel)))
                         except ValueError:
                             pass  # bad line: skip
+                    elif line.startswith('h,'):  # the dashboard's BPM per sensor and average: h,b0,b1,b2,b3,avg
+                        try:
+                            nums = [int(x) for x in line.split(',')[1:]]
+                            if len(nums) == 5:
+                                q.put_nowait(('h', *nums))
+                        except ValueError:
+                            pass
             except queue.Full:
                 pass
         nxt += PERIOD

@@ -1,4 +1,4 @@
-// Song tempo from the drum finger's heart. Pure.
+// Song tempo from the average heart rate of every stabilised finger. Pure.
 import { GENRES } from './patterns.js'; // only for each genre's default (idle) tempo
 
 const clamp = (x, lo, hi) => Math.min(hi, Math.max(lo, x));
@@ -7,26 +7,36 @@ const clamp = (x, lo, hi) => Math.min(hi, Math.max(lo, x));
 // ponytail: x2 is a taste call; the 60..220 clamp only guards against sensor glitches.
 export const songBpm = (hr) => clamp(hr * 2, 60, 220);
 
-// Tempo follower. update(drumHeart) -> target BPM.
-//   genre default while the drum finger is off or unsettled
-//   lock    first settled reading jumps the target to songBpm(hr)
-//   follow  then moves for changes of 0.5 BPM or more (fine steps)
-//   release finger lifts: back to the genre default
-// The caller glides the transport to each new target over 2 bars.
+export const AVG_S = 10;   // ponytail: the average heart rate forgets over about this many seconds
+export const STEP = 4;     // ponytail: the song only moves once it is this many song BPM (2 heart BPM) off
+export const HOLD_S = 8;   // ponytail: with every finger gone, the song keeps its tempo this long
+
+// Tempo follower. update(hearts, dt) -> { song, heart }: the song's target BPM (a whole number
+// while hearts drive it) and the average heart BPM behind it (0 = no hearts). dt: seconds since
+// the last call. The rules:
+//   average  the mean of the stabilised fingers' rates, smoothed over AVG_S. A finger that is
+//            still calibrating (heart.settled false) does not count.
+//   lock     the first stabilised finger sets the song to twice the average, rounded
+//   follow   after that the song moves only when twice the average is STEP or more away
+//   hold     when the last finger lifts, the song keeps its tempo and its average for HOLD_S
+//   release  then it goes back to the genre default
+// The caller applies a new target at a bar line and glides to it over 2 bars.
 export function createTempo(genreName) {
   const genre = GENRES[genreName]?.tempo;
   if (!genre) throw new RangeError(`Unknown genre: ${genreName}`);
-  let target = genre.default;
-  let locked = false;
-  return function update(drum) {
-    if (!drum.on || !drum.settled) {
-      locked = false;
-      target = genre.default;
-    } else {
-      const want = songBpm(drum.hr);
-      if (!locked || Math.abs(want - target) >= 0.5) target = want;
+  let target = genre.default, avg = null, locked = false, idle = 0;
+  return function update(hearts, dt = 0) {
+    const hrs = hearts.filter((h) => h?.on && h.settled).map((h) => h.hr);
+    if (hrs.length) {
+      const mean = hrs.reduce((a, b) => a + b, 0) / hrs.length;
+      avg = avg === null ? mean : avg + (mean - avg) * (1 - Math.exp(-dt / AVG_S));
+      idle = 0;
+      const want = Math.round(songBpm(avg));
+      if (!locked || Math.abs(want - target) >= STEP) target = want;
       locked = true;
+    } else if (locked && (idle += dt) >= HOLD_S) {
+      locked = false; avg = null; target = genre.default;
     }
-    return target;
+    return { song: target, heart: avg ?? 0 };
   };
 }

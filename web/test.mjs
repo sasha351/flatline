@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { isButton, parseLine, simChannels, simFill, simSensors, simTapped } from './serial.js';
+import { bpmLine, isButton, parseLine, simChannels, simFill, simSensors, simTapped } from './serial.js';
 
 assert.deepEqual(parseLine('1,2,3,4'), [1, 2, 3, 4]);
 assert.deepEqual(parseLine('100000,0,262143,5\r'), [100000, 0, 262143, 5]);
@@ -9,6 +9,9 @@ assert.equal(parseLine('3,4\n1,2'), null);    // partial / garbage
 assert.equal(parseLine(''), null);
 assert.equal(parseLine('b'), null);         // the Pi's button line is not a frame
 assert.ok(isButton('b') && isButton('b\r') && !isButton('1,2,3,4') && !isButton(''));
+// the OLED gets exactly the numbers on the dashboard: nothing for a missing finger or a calibrating one
+assert.equal(bpmLine([{ finger: true, stable: true, bpm: 71.6 }, { finger: true, stable: false, bpm: 97 }, { finger: false, stable: false, bpm: 0 }, { finger: true, stable: true, bpm: 80.2 }], 75.7), 'h,72,0,0,80,76');
+assert.equal(bpmLine([{}, {}, {}, {}]), 'h,0,0,0,0,0');
 {
   // simFill: zeros (missing sensors) become simulated pulses, real values pass through
   const out = [];
@@ -179,11 +182,11 @@ import { createHeart, HR_DEFAULT } from './audio/heart.js';
     const beat = t >= nextBeat;
     let inst = 0;
     if (beat) { inst = prevBeat ? 60 / (t - prevBeat) : 0; prevBeat = t; nextBeat = t + 60 / rateNow; }
-    s = heart({ finger: true, beat, bpm: i > 100 ? 70 : 0, amp, inst });
+    s = heart({ finger: true, beat, bpm: i > 100 ? 70 : 0, amp, inst, stable: i > 200 });
     if (beat && i > 50 * 20 && i < 50 * 50) swing.push([rateNow, s.breath]);
     if (i === 50 * 50 - 1) pressBefore = s.press;
     if (i === 50 * 51) pressAfter = s.press;          // 1 s after pressing harder
-    if (i === 50) assert.ok(!s.settled && s.hr === HR_DEFAULT && s.breath === 0);
+    if (i === 50 || i === 150) assert.ok(!s.settled && s.hr === HR_DEFAULT && s.breath === 0); // no BPM yet; then a BPM still calibrating
   }
   assert.ok(s.settled && s.hr === 70);
   const hi = Math.max(...swing.map(([, br]) => br)), lo = Math.min(...swing.map(([, br]) => br));
@@ -194,7 +197,7 @@ import { createHeart, HR_DEFAULT } from './audio/heart.js';
   assert.ok(pressAfter > 0.9, `press after pressing harder: ${pressAfter}`);
   assert.ok(s.press < pressAfter, 'press re-centres as the slow average adapts');
   assert.equal(heart({ finger: false }).on, false);
-  assert.equal(heart({ finger: true, beat: false, bpm: 70, amp: 300, inst: 70 }).settled, false); // lift resets
+  assert.equal(heart({ finger: true, beat: false, bpm: 70, amp: 300, inst: 70, stable: false }).settled, false); // a new finger calibrates again
 
 }
 console.log('heart ok');
@@ -211,7 +214,7 @@ import { start } from './core.js';
   assert.deepEqual(got.raws, [100000, 0, 0, 0]);
   assert.equal(got.ch.length, 4);
   assert.ok(got.ch[0].finger && !got.ch[1].finger);
-  assert.deepEqual(Object.keys(got.ch[0]).sort(), ['ac', 'amp', 'beat', 'bpm', 'finger', 'held', 'inst']);
+  assert.deepEqual(Object.keys(got.ch[0]).sort(), ['ac', 'amp', 'beat', 'bpm', 'finger', 'held', 'inst', 'stable']);
   assert.deepEqual(status, ['idle', 'running']);
 }
 {

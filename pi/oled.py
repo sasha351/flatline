@@ -6,8 +6,9 @@ pad dots). Every detected heartbeat shoots that ball's spikes out. When every pr
 on, the balls slide together into one ball whose colour regions are a dye swirl of the four patterns.
 
 run(q) is the entry point; flatline.py starts it in its own process, so its CPU never holds the
-GIL of the sensor threads. q carries (ir0, ir1, ir2, ir3) tuples at 50 Hz, and ('n', voice, drum, velocity)
-note messages from the browser. Spikes follow the notes; with no note for NOTE_HOLD seconds they follow heartbeats.
+GIL of the sensor threads. q carries (ir0, ir1, ir2, ir3) tuples at 50 Hz, ('n', voice, drum, velocity)
+note messages from the browser, and ('h', b0, b1, b2, b3, avg): the BPM the dashboard is showing. While those
+arrive the panel prints them, so the two always agree; without a browser it prints its own estimate. Spikes follow the notes; with no note for NOTE_HOLD seconds they follow heartbeats.
 
   python3 oled.py --demo       drive the real panel with simulated fingers (stop flatline first)
   python3 oled.py --selftest   no hardware: render simulated frames, check, time, print previews
@@ -28,6 +29,7 @@ RETRY = 5.0       # seconds between attempts to (re)init a missing panel
 # Merge when every PRESENT sensor has a finger and at least this many do.
 MIN_MERGE = 2
 NOTE_HOLD = 2.0   # seconds after a note during which heartbeats do not fire spikes
+HOST_HOLD = 2.0   # seconds a BPM line from the browser stays in charge of the numbers (it sends two a second)
 W, H = 128, 64
 NAMES = ['DR', 'BS', 'LD', 'PD']
 
@@ -37,7 +39,8 @@ def log(s):
 
 
 # ---------- beat detector: port of createChannel() in web/signal.js ----------
-# Mirrors web/signal.js and must stay in sync with it: same constants, same bad-read filter, same robust BPM.
+# An older, simpler version of web/signal.js (no band-pass, no quality lock). It drives the spikes and the
+# finger test. Its BPM is only the fallback for when no browser is connected: see Model.shown().
 FINGER_MIN = 30000
 WINDOW_S = 1.5
 MIN_SWING = 60
@@ -222,10 +225,15 @@ class Model:
         self.t = 0.0
         self.last_note = -9.0
         self.kicked = False
+        self.host = (0, 0, 0, 0, 0)     # the browser's BPM per sensor, then its average heart BPM; 0 = show none
+        self.host_t = -9.0
 
     def handle(self, msg, t):
         """One queue message: a raw tuple of four ints, or ('n', voice, drum, velocity)."""
-        if msg[0] == 'n':
+        if msg[0] == 'h':
+            self.t = t
+            self.host, self.host_t = tuple(msg[1:6]), t
+        elif msg[0] == 'n':
             self.t = t
             _, voice, drum, vel = msg
             if 0 <= voice < 4:
@@ -234,6 +242,16 @@ class Model:
                 self.fire(voice, kind, vel)
         else:
             self.feed(msg, t)
+
+    def shown(self, i):
+        """The BPM to print for sensor i (4: the average for the merged ball); 0 = none. The browser's
+        number while it is connected, so the panel matches the dashboard, else our own estimate."""
+        if self.t - self.host_t < HOST_HOLD:
+            return self.host[i]
+        if i < 4:
+            return self.bpm[i] if self.finger[i] else 0
+        known = [self.bpm[k] for k in range(4) if self.finger[k] and self.bpm[k] > 0]
+        return sum(known) / len(known) if known else 0
 
     def feed(self, raws, t):
         self.t = t
@@ -331,9 +349,9 @@ def render(m, buf):
     px = {}
     if m.merge >= 1:
         px = ball(64, 30, 13, radii(m, 0, 13, True), dye_fill(m, 13))
-        known = [m.bpm[i] for i in range(4) if m.finger[i] and m.bpm[i] > 0]
-        if known:
-            text5(buf, str(round(sum(known) / len(known))), 90, 26)
+        avg = m.shown(4)
+        if avg > 0:
+            text5(buf, str(round(avg)), 90, 26)
         else:
             text3(buf, '--', 90, 29)
         text3(buf, 'BPM', 90, 36)
@@ -348,7 +366,7 @@ def render(m, buf):
                 dashed_ring(buf, x, y, 4)
             if e < 0.5:
                 text3(buf, NAMES[i], x - 3, 2)
-                b = str(round(m.bpm[i])) if m.present[i] and m.finger[i] and m.bpm[i] > 0 else '--'
+                b = str(round(m.shown(i))) if m.present[i] and m.finger[i] and m.shown(i) > 0 else '--'
                 text3(buf, b, x - (len(b) * 4 - 1) // 2, 44)
         acc = {}
         for mp in maps:
@@ -571,6 +589,13 @@ def selftest():
     assert abs(n.env(1) - 5) < 1e-9 and n.env(0) == 0
     n.handle(('n', 0, 'kick', 0.0), 5.0)
     assert abs(n.env(0) - 3) < 1e-9 and n.kicked
+    h = Model()  # the browser's BPM line takes over the numbers, and hands back when it stops coming
+    h.bpm, h.finger = [50.0, 60.0, 0.0, 0.0], [True, True, False, False]
+    assert h.shown(0) == 50 and h.shown(2) == 0 and h.shown(4) == 55
+    h.handle(('h', 72, 0, 0, 80, 76), 1.0)
+    assert [h.shown(i) for i in range(5)] == [72, 0, 0, 80, 76]
+    h.feed((0, 0, 0, 0), 1.0 + HOST_HOLD + 0.1)
+    assert h.shown(0) == 0 and h.shown(4) == 0  # fingers off, no browser
     assert unmerged and any(b for b in prev), 'blank frame'
     print(f"{frames} frames, {changed} changed, {notes} notes, peak env {peak:.1f}, merge reached, {spent / frames * 1000:.2f} ms/frame")
     print('--- unmerged (frame 100) ---\n' + unmerged + '\n--- merged ---\n' + merged)
