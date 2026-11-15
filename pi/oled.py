@@ -6,8 +6,9 @@ pad dots). Every detected heartbeat shoots that ball's spikes out. When every pr
 on, the balls slide together into one ball whose colour regions are a dye swirl of the four patterns.
 
 run(q) is the entry point; flatline.py starts it in its own process, so its CPU never holds the
-GIL of the sensor threads. q carries (ir0, ir1, ir2, ir3) tuples at 50 Hz, and ('n', voice, drum, velocity)
-note messages from the browser. Spikes follow the notes; with no note for NOTE_HOLD seconds they follow heartbeats.
+GIL of the sensor threads. q carries (ir0, ir1, ir2, ir3) tuples at 50 Hz, ('n', voice, drum, velocity)
+note messages from the browser, and ('k', name) when the browser switches kit. Spikes follow the notes; with no
+note for NOTE_HOLD seconds they follow heartbeats. A kit change slides a banner with the genre name down from the top.
 
   python3 oled.py --demo       drive the real panel with simulated fingers (stop flatline first)
   python3 oled.py --selftest   no hardware: render simulated frames, check, time, print previews
@@ -22,6 +23,7 @@ import time
 
 CHIP = 'sh1106'   # or 'ssd1306'; same page addressing, the SH1106 glass is offset 2 columns
 ADDR, BUS = 0x3C, 1
+FLIP = True       # rotate 180 degrees: the panel is mounted upside down
 FPS = 15          # ponytail: frames per second; each full frame is ~1 KB over the shared I2C bus, so lower it if sensor 0 stutters
 RETRY = 5.0       # seconds between attempts to (re)init a missing panel
 # ponytail: a missing sensor reads 0 and is skipped, so the rest can still merge.
@@ -30,6 +32,8 @@ MIN_MERGE = 2
 NOTE_HOLD = 2.0   # seconds after a note during which heartbeats do not fire spikes
 W, H = 128, 64
 NAMES = ['DR', 'BS', 'LD', 'PD']
+BANNER_IN, BANNER_HOLD, BANNER_OUT = 0.25, 1.5, 0.25  # seconds: slide down, stay, slide back up
+BANNER_CHARS = 14  # per line at double size (8 px a character); longer names wrap at a space
 
 
 def log(s):
@@ -123,7 +127,8 @@ F3 = {  # 3x5: 5 rows, one octal digit (3 bits, left = high bit) per row
     '8': '75757', '9': '75717', 'A': '25755', 'B': '65656', 'C': '34443', 'D': '65556', 'E': '74647', 'F': '74644',
     'G': '34553', 'H': '55755', 'I': '72227', 'J': '11152', 'K': '55655', 'L': '44447', 'M': '57755', 'N': '75555',
     'O': '25552', 'P': '65644', 'Q': '25573', 'R': '65655', 'S': '34216', 'T': '72222', 'U': '55557', 'V': '55552',
-    'W': '55775', 'X': '55255', 'Y': '55222', 'Z': '71247', '-': '00700', ' ': '00000', '.': '00002', ':': '02020'}
+    'W': '55775', 'X': '55255', 'Y': '55222', 'Z': '71247', '-': '00700', ' ': '00000', '.': '00002', ':': '02020',
+    '&': '25253', "'": '22000'}
 F5 = [  # 5x7 digits: 7 rows of 5 bits
     (0x0E, 0x11, 0x13, 0x15, 0x19, 0x11, 0x0E), (0x04, 0x0C, 0x04, 0x04, 0x04, 0x04, 0x0E),
     (0x0E, 0x11, 0x01, 0x02, 0x04, 0x08, 0x1F), (0x1F, 0x02, 0x04, 0x02, 0x01, 0x11, 0x0E),
@@ -137,15 +142,59 @@ def pset(buf, x, y):
         buf[x + (y >> 3) * W] |= 1 << (y & 7)
 
 
-def text3(buf, s, x, y):
+def pclr(buf, x, y):
+    if 0 <= x < W and 0 <= y < H:
+        buf[x + (y >> 3) * W] &= ~(1 << (y & 7))
+
+
+def text3(buf, s, x, y, k=1):
+    """3x5 font, each pixel drawn k x k."""
     for ch in s:
         g = F3.get(ch)
         if g:
             for r in range(5):
                 for c in range(3):
                     if (int(g[r]) >> (2 - c)) & 1:
-                        pset(buf, x + c, y + r)
-        x += 4
+                        for dy in range(k):
+                            for dx in range(k):
+                                pset(buf, x + c * k + dx, y + r * k + dy)
+        x += 4 * k
+
+
+def banner_lines(name):
+    """The genre name in capitals, split at spaces into lines of at most BANNER_CHARS."""
+    lines = []
+    for word in name.upper().split():
+        if lines and len(lines[-1]) + 1 + len(word) <= BANNER_CHARS:
+            lines[-1] += ' ' + word
+        else:
+            lines.append(word[:BANNER_CHARS])
+    return lines[:2] or ['']
+
+
+def draw_banner(buf, lines, drop):
+    """A boxed label hanging from the top edge, slid down by drop (0 hidden .. 1 fully shown)."""
+    h = 12 * len(lines) + 4                # 10 px text rows 2 px apart, 2 px padding and a 1 px border each side
+    top = round(-h + h * drop)
+    w = max(len(l) for l in lines) * 8 - 2 + 10
+    x0 = (W - w) // 2
+    for y in range(top, top + h):
+        for x in range(x0, x0 + w):
+            edge = y in (top, top + h - 1) or x in (x0, x0 + w - 1)
+            (pset if edge else pclr)(buf, x, y)
+    for i, line in enumerate(lines):
+        text3(buf, line, (W - (len(line) * 8 - 2)) // 2, top + 3 + 12 * i, 2)
+
+
+def banner_drop(age):
+    """0..1 for a banner shown age seconds ago, eased in and out; 0 once it has gone."""
+    if age < 0 or age >= BANNER_IN + BANNER_HOLD + BANNER_OUT:
+        return 0.0
+    if age < BANNER_IN:
+        return smooth(age / BANNER_IN)
+    if age < BANNER_IN + BANNER_HOLD:
+        return 1.0
+    return smooth(1 - (age - BANNER_IN - BANNER_HOLD) / BANNER_OUT)
 
 
 def text5(buf, s, x, y):
@@ -222,10 +271,13 @@ class Model:
         self.t = 0.0
         self.last_note = -9.0
         self.kicked = False
+        self.banner = ([''], -99.0)     # (lines, time shown) of the latest kit change
 
     def handle(self, msg, t):
-        """One queue message: a raw tuple of four ints, or ('n', voice, drum, velocity)."""
-        if msg[0] == 'n':
+        """One queue message: a raw tuple of four ints, ('n', voice, drum, velocity) or ('k', kit name)."""
+        if msg[0] == 'k':
+            self.banner = (banner_lines(msg[1]), t)
+        elif msg[0] == 'n':
             self.t = t
             _, voice, drum, vel = msg
             if 0 <= voice < 4:
@@ -360,6 +412,10 @@ def render(m, buf):
         if v:
             y, x = k >> 7, k & 127
             buf[x + (y >> 3) * W] |= 1 << (y & 7)
+    lines, shown = m.banner
+    drop = banner_drop(m.t - shown)
+    if drop > 0:
+        draw_banner(buf, lines, drop)
 
 
 # ---------- the panel ----------
@@ -376,8 +432,9 @@ class Panel:
         pump = [0x8D, 0x14] if CHIP == 'ssd1306' else [0xAD, 0x8B]  # charge pump / DC-DC on
         self.col = col
         self.bus = SMBus(BUS)
+        seg, com = (0xA0, 0xC0) if FLIP else (0xA1, 0xC8)  # column and row scan direction; both swapped = 180 degrees
         self._cmd(0xAE, 0xD5, 0x80, 0xA8, 0x3F, 0xD3, 0x00, 0x40, *pump, 0x20, 0x02,
-                  0xA1, 0xC8, 0xDA, 0x12, 0x81, 0xCF, 0xD9, 0xF1, 0xDB, 0x40, 0xA4, 0xA6)
+                  seg, com, 0xDA, 0x12, 0x81, 0xCF, 0xD9, 0xF1, 0xDB, 0x40, 0xA4, 0xA6)
         self._cmd(0xAF)
         self.last = None  # force a full redraw after (re)init
 
@@ -572,8 +629,23 @@ def selftest():
     n.handle(('n', 0, 'kick', 0.0), 5.0)
     assert abs(n.env(0) - 3) < 1e-9 and n.kicked
     assert unmerged and any(b for b in prev), 'blank frame'
+    assert banner_lines('Russian hardbass') == ['RUSSIAN', 'HARDBASS']
+    assert banner_lines('R&B') == ['R&B'] and banner_lines('Organic house') == ['ORGANIC HOUSE']
+    k, plain = Model(), Model()  # a kit change slides a banner in, holds it, and is gone after IN + HOLD + OUT
+    k.handle(('k', 'Drum and bass'), 10.0)
+    gone = BANNER_IN + BANNER_HOLD + BANNER_OUT
+    assert banner_drop(0.0) == 0.0 and banner_drop(BANNER_IN + 0.5) == 1.0 and banner_drop(gone + 0.01) == 0.0
+    assert 0 < banner_drop(BANNER_IN / 2) < 1 and 0 < banner_drop(gone - BANNER_OUT / 2) < 1
+    ref = bytearray(len(buf))
+    for t, visible in ((10.0 + BANNER_IN + 0.5, True), (10.0 + gone + 0.01, False)):
+        k.t = plain.t = t
+        render(k, buf)
+        render(plain, ref)
+        assert (buf != ref) == visible, f'banner visible={buf != ref} at t={t}'
+        if visible:
+            shown_frame = ascii_frame(buf)
     print(f"{frames} frames, {changed} changed, {notes} notes, peak env {peak:.1f}, merge reached, {spent / frames * 1000:.2f} ms/frame")
-    print('--- unmerged (frame 100) ---\n' + unmerged + '\n--- merged ---\n' + merged)
+    print('--- unmerged (frame 100) ---\n' + unmerged + '\n--- merged ---\n' + merged + '\n--- kit banner ---\n' + shown_frame)
 
 
 if __name__ == '__main__':

@@ -73,6 +73,9 @@ on('connect', go((frame, onClose) => {
   const out = forced.length ? simChannels(onFrame, forced) : onFrame;
   return connectSerial(filling ? simFill(out, () => route) : out, onClose, () => emit('button'));
 }));
+// Tell the Pi about every kit change (button or menu) so its OLED can show the genre name.
+// stop is the running source's stop(); only the serial source has send().
+on('kit', (name) => stop?.send?.(`k,${name}`));
 on('simulate', go((onFrame, onClose) => {
   filling = false;
   announce();

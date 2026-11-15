@@ -14,12 +14,16 @@ const anyPort = () => new URLSearchParams(globalThis.location?.search).get('port
 // The Pi sends this line once per press of the genre button (GPIO26, see pi/flatline.py).
 export const isButton = (line) => line.trim() === 'b';
 
+// Resolves to stop(); stop.send(line) writes one line back to the Pi (e.g. `k,<kit>` for its OLED banner).
+// Sends are fire-and-forget: a failed write (unplugged, old firmware ignoring it) is dropped.
 export async function connectSerial(onFrame, onClose, onButton) {
   const port = await navigator.serial.requestPort(anyPort() ? {} : { filters: [PI_GADGET] });
   await port.open({ baudRate: 115200 }); // ignored by the gadget; the Arduino sketches use it
   const decoder = new TextDecoderStream();
   const piped = port.readable.pipeTo(decoder.writable).catch(() => {});
   const reader = decoder.readable.getReader();
+  const writer = port.writable.getWriter();
+  const encoder = new TextEncoder();
 
   (async () => {
     let buf = '';
@@ -43,11 +47,14 @@ export async function connectSerial(onFrame, onClose, onButton) {
     onClose();
   })();
 
-  return async () => {
+  const stop = async () => {
     await reader.cancel().catch(() => {});
     await piped;
+    writer.releaseLock();
     await port.close().catch(() => {});
   };
+  stop.send = (line) => { writer.write(encoder.encode(`${line}\n`)).catch(() => {}); };
+  return stop;
 }
 
 // Simulated IR: dips on each pulse, sitting on a ~100k DC level, plus sensor noise.

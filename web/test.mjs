@@ -382,3 +382,49 @@ console.log('simChannels ok');
   assert.equal(got[2], 3, 'tapping again hands the channel back');
 }
 console.log('simTapped ok');
+{
+  // connectSerial over a fake port: frames and the button come in, stop.send writes a line out,
+  // and a kit change (from the button or the menu) reaches the Pi as `k,<name>` for its OLED banner.
+  const { connectSerial } = await import('./serial.js');
+  const { emit } = await import('./bus.js');
+  const fakePort = () => {
+    const port = { written: '', closed: false };
+    port.readable = new ReadableStream({ start(c) { port.feed = (s) => c.enqueue(new TextEncoder().encode(s)); } });
+    port.writable = new WritableStream({ write(chunk) { port.written += new TextDecoder().decode(chunk); } });
+    port.open = async () => {};
+    port.close = async () => { port.closed = true; };
+    return port;
+  };
+  let port = fakePort();
+  Object.defineProperty(globalThis.navigator, 'serial', { configurable: true, value: { requestPort: async () => port } });
+  const frames = [];
+  let presses = 0;
+  const stop = await connectSerial((f) => frames.push(f), () => {}, () => presses++);
+  port.feed('1,2,3,4\nb\n5,6,7,8\n');
+  await new Promise((r) => setTimeout(r, 20));
+  assert.deepEqual(frames, [[1, 2, 3, 4], [5, 6, 7, 8]]);
+  assert.equal(presses, 1);
+  stop.send('k,R&B');
+  await new Promise((r) => setTimeout(r, 20));
+  assert.equal(port.written, 'k,R&B\n');
+  await stop();
+  assert.ok(port.closed, 'stop closes the port with the writer released');
+
+  port = fakePort();
+  emit('connect');
+  await new Promise((r) => setTimeout(r, 50));
+  emit('kit', 'Drum and bass');
+  await new Promise((r) => setTimeout(r, 20));
+  assert.equal(port.written, 'k,Drum and bass\n', 'core forwards kit changes to the Pi');
+  const first = port;                    // reconnecting closes the old port; kit changes go to the new one only
+  port = fakePort();
+  emit('connect');
+  await new Promise((r) => setTimeout(r, 50));
+  emit('kit', 'Lo-fi');
+  await new Promise((r) => setTimeout(r, 20));
+  assert.ok(first.closed, 'switching source closes the old port');
+  assert.equal(first.written, 'k,Drum and bass\n');
+  assert.equal(port.written, 'k,Lo-fi\n');
+  delete globalThis.navigator.serial;
+}
+console.log('serial send ok');

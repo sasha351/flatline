@@ -5,7 +5,8 @@ Reads 4x MAX30102 (all fixed at 0x57), one per I2C bus, and streams raw IR as
 CSV: `ir0,ir1,ir2,ir3` at 50 Hz. A missing sensor reads 0. This is the same
 format the old Arduino sketch sent, so the web app doesn't change.
 A push button between GPIO26 (pin 37) and any GND sends a line `b` on each press:
-the web app steps to the next genre.
+the web app steps to the next genre. The web app writes `k,<kit name>` back whenever
+the kit changes, and the OLED shows that name in a banner.
 
 Usage: flatline.py [OUT]   OUT defaults to /dev/ttyGS0 (USB gadget serial);
                              pass - to print to stdout for testing over ssh.
@@ -290,8 +291,10 @@ def main():
         if q:
             try:
                 q.put_nowait(vals)
-                for line in out.read_lines():  # browser note lines: n,voice,drum,velocity
-                    if line.startswith('n,'):
+                for line in out.read_lines():  # browser lines: n,voice,drum,velocity  or  k,<kit name>
+                    if line.startswith('k,'):
+                        q.put_nowait(('k', line[2:].strip()[:40]))
+                    elif line.startswith('n,'):
                         try:
                             _, v, drum, vel = line.split(',')
                             q.put_nowait(('n', int(v), drum, float(vel)))
