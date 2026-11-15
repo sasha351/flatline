@@ -112,33 +112,29 @@ Pick a kit and let the hearts do the rest:
 
 - **French house**: disco four-on-the-floor with sidechain pump, plucked bass, talkbox vowel lead, and short phased saw stabs
 - **UK garage**: shuffled two-step with a rim and metal hats, rubbery FM bass, chopped ah/oh vocal lead, and organ stabs
-- **Ambient**: sparse percussion, long bass swells, sustained chords, and wide melodic space
-- **Russian hardbass**: long distorted kick, offbeat fat-saw donk bass, supersaw riffs, and rave stabs
+- **Russian hardbass**: long distorted kick, a bouncy offbeat "donk" bass (each note drops an octave into place), supersaw riffs, and rave stabs
 - **Drum and bass**: fast two-step break with a cracking snare, dark reese bass, echoing plucks, and held airy chords
 - **Acid techno**: four-on-the-floor with a squelching resonant bass line, sparse saw bleeps, and offbeat rave stabs
-- **Lo-fi**: half-time and mellow, so the beat you feel is the heart rate itself: dull kit, round bass, soft plucks, electric-piano chords
-- **Boom bap**: old-school rap, half-time and swung: hard kick and cracking snare, sub bass, a chopped piano loop, and record scratches from the fourth sensor
-- **Psytrance**: a rolling bass on the three 16ths after every kick, a squiggly echoing saw lead, distant chords
-- **Trap**: half-time, long 808 kick and gliding 808 bass, hi-hat rolls, a dark bell melody
-- **Dubstep**: half-time, huge snare on beat 3, a wobble bass whose filter swings in time with the beat
-- **Hardstyle**: very distorted kick with a reverse bass swelling into every gap, euphoric supersaw lead
+- **Lo-fi**: half-time and mellow, so the beat you feel is the heart rate itself: dull kit, round bass, a soft vibraphone, electric-piano chords
+- **Boom bap**: old-school rap, half-time and swung: kick on 1 with late swung kicks, snare on 2 and 4, eighth hats, sub bass, a chopped piano loop, and record scratches from the fourth sensor
+- **Trap**: half-time, long 808 kick and gliding 808 bass, hi-hat rolls, a dark FM bell melody
 - **Reggaeton**: half-time dembow rhythm, sub bass, plucked melody, offbeat piano stabs (fits faster heart rates best: the felt beat is the heart rate, around 90-95)
+- **Jersey club**: a bouncy five-kick bar on a boomy kick and cracking clap, 808 bass, the bed squeak as the lead, orchestra hits. Its kicks are really triplets; the grid only has 16th notes, so the pattern is a close stand-in
 - **Hard groove**: percussive, looping techno: four-on-the-floor under rolling toms, rims and shuffled hats, funky bass stabs, organ chords
 - **Phonk**: drift phonk: a distorted 808 cowbell plays the riff over an 808 kick, clap on 2 and 4, a distorted gliding 808 bass, and Memphis-style vocal chops from the fourth sensor
-- **Dream pop**: half-time and hazy: soft drums in a big room, shimmering echoed plucks, chorused major-seventh chords
 - **Hyperpop**: fast and overloaded: distorted kick, hi-hat rolls, distorted 808, bright supersaw hooks, chipmunk vocal chops from the fourth sensor
 - **Rock**: straight rock beat, picked eighth-note bass, distorted lead guitar, power-chord rhythm guitar (all synthesised, so a rock band as a synth would play it)
-- **Drill**: half-time and dark: skippy hats and rolls, late snares, 808s that slide between octaves, piano and strings
+- **Drill**: half-time and dark: skippy hats and rolls, late snares, 808s that slide between octaves, an eerie sliding flute, strings
 - **R&B**: half-time and swung: soft kick and finger snaps, round bass, talkbox lead, electric-piano chords
-- **Emo**: midwest emo: driving beat, melodic bass, twinkly clean-guitar arpeggios, crunchy major-seventh strums
 - **Metal**: double-kick 16ths, bass locked to the kick, a heavily driven riff in E Phrygian, palm-muted chugs (synthesised, like Rock)
 - **EDM**: festival big room: four-on-the-floor with hard sidechain pump, offbeat bass, supersaw anthem lead and big supersaw chords
-- **Girl EDM**: bright, sugary pop EDM in the future-bass style: half-time, pumping supersaw chord swells, high vocal-chop hooks, hat rolls, 808 sub
-- **Footwork** and **Jersey club**: fast, skittering or bouncy kick patterns with vocal chops from the fourth sensor. Their kicks are really triplets; the grid only has 16th notes, so these are close stand-ins
+- **Organic house**: slow, warm house (1.5 x heart rate): soft kick, shakers, congas and rims, deep rolling bass, kalimba, warm pad
+- **Lounge**: relaxed and jazzy, bossa-tinged (1.25 x heart rate): brushed kit with a cross-stick clave, walking bass, soft flute, electric piano
+- **Disco** (1.5 x heart rate): four-on-the-floor with offbeat open hats, octave bass, funky clean guitar, string stabs and swells
 
 To add a kit, add a genre to `web/audio/patterns.js` and a kit of the same name to `web/audio/kits.js`; both files say how at the end of their tables.
 
-**BPM and tempo.** A finger's BPM appears once it has stabilised, about 8 s after a still finger lands; until then its number is a shimmering placeholder and it does not steer the music. The song's tempo is twice the average heart rate of every stabilised finger. It moves in whole BPM, only once the average has shifted by 2 heart BPM, only at a bar line, and it holds for 8 s after the last finger lifts. The dashboard shows both as **song bpm** and **avg heart bpm** (rules and knobs: `web/audio/tempo.js`, `web/signal.js`).
+**BPM and tempo.** A finger's BPM appears once it has stabilised, about 8 s after a still finger lands; until then its number is a shimmering placeholder and it does not steer the music. The song's tempo is twice the average heart rate of every stabilised finger (1.5 times for Disco and Organic house, 1.25 for Lounge, which are slower genres). It moves in whole BPM, only once the average has shifted by 2 heart BPM, only at a bar line, and it holds for 8 s after the last finger lifts. The dashboard shows both as **song bpm** and **avg heart bpm** (rules and knobs: `web/audio/tempo.js`, `web/signal.js`).
 
 Each active sensor evolves its voice from its recent signal history and the shared musical grid. Kit choice is the only creative control; everything else is operational. Pulse amplitude and beat-interval variation are bounded modulation sources, not calibrated finger-pressure or breathing-rate readings.
 

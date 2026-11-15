@@ -3,9 +3,9 @@ import { GENRES } from './patterns.js'; // only for each genre's default (idle) 
 
 const clamp = (x, lo, hi) => Math.min(hi, Math.max(lo, x));
 
-// Song tempo is the heart rate doubled, the same for every genre: 70 -> 140, 90 -> 180.
-// ponytail: x2 is a taste call; the 60..220 clamp only guards against sensor glitches.
-export const songBpm = (hr) => clamp(hr * 2, 60, 220);
+// Song tempo is the heart rate times the genre's ratio: doubled for most (70 -> 140, 90 -> 180), less for
+// slow genres (`tempo.ratio` in patterns.js: disco 1.5, so 80 -> 120). The 60..220 clamp only guards against glitches.
+export const songBpm = (hr, ratio = 2) => clamp(hr * ratio, 60, 220);
 
 export const AVG_S = 10;   // ponytail: the average heart rate forgets over about this many seconds
 export const STEP = 4;     // ponytail: the song only moves once it is this many song BPM (2 heart BPM) off
@@ -23,6 +23,7 @@ export const HOLD_S = 8;   // ponytail: with every finger gone, the song keeps i
 // The caller applies a new target at a bar line and glides to it over 2 bars.
 export function createTempo(genreName) {
   const genre = GENRES[genreName]?.tempo;
+  const ratio = genre?.ratio ?? 2;
   if (!genre) throw new RangeError(`Unknown genre: ${genreName}`);
   let target = genre.default, avg = null, locked = false, idle = 0;
   return function update(hearts, dt = 0) {
@@ -31,7 +32,7 @@ export function createTempo(genreName) {
       const mean = hrs.reduce((a, b) => a + b, 0) / hrs.length;
       avg = avg === null ? mean : avg + (mean - avg) * (1 - Math.exp(-dt / AVG_S));
       idle = 0;
-      const want = Math.round(songBpm(avg));
+      const want = Math.round(songBpm(avg, ratio));
       if (!locked || Math.abs(want - target) >= STEP) target = want;
       locked = true;
     } else if (locked && (idle += dt) >= HOLD_S) {

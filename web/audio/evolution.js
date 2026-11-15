@@ -103,6 +103,8 @@ export function createEvolution(genreName) {
         ? (step % 4 === 2 ? genre.swing * 2 * stepSeconds : 0)
         : (step % 2 === 1 ? genre.swing * stepSeconds : 0);
       const position = step % 16;
+      // A grid is one bar (16 steps) or two (32). Half-time genres write a whole felt bar in 32 (Boom bap).
+      const at = (grid) => grid?.[step % grid.length];
       const events = [];
       const { key } = genre;
       const chord = key.chords ? key.chords[Math.floor(step / 16) % key.chords.length] : null;
@@ -118,17 +120,17 @@ export function createEvolution(genreName) {
             if (calm && drum === 'openhat') return;
             // One hi-hat can't be open and closed at once, and both use one synth: two hits at the same
             // instant make Tone throw, which dropped every later note of that step. The open hat wins.
-            if (drum === 'hat' && !calm && variant.openhat?.[position]) return;
-            if (drum === 'hat' && variant.hatroll?.[position]) return; // a roll owns this step's hat
+            if (drum === 'hat' && !calm && at(variant.openhat)) return;
+            if (drum === 'hat' && at(variant.hatroll)) return; // a roll owns this step's hat
             if (drum === 'hatroll') { // trap roll: two closed hats in one 16th (32nd notes), the second a little softer
-              if (grid[position]) [0, 0.5].forEach((k, j) => events.push(voiceEvent(voice, 'hat', stepSeconds, offset + k * stepSeconds, heart, key, chord, grid[position] * (j ? 0.55 : 0.7))));
+              if (at(grid)) [0, 0.5].forEach((k, j) => events.push(voiceEvent(voice, 'hat', stepSeconds, offset + k * stepSeconds, heart, key, chord, at(grid) * (j ? 0.55 : 0.7))));
               return;
             }
-            const hit = grid[position] || (hot && drum === 'hat' && 0.4);
+            const hit = at(grid) || (hot && drum === 'hat' && 0.4);
             if (hit) events.push(voiceEvent(voice, drum, stepSeconds, offset, heart, key, chord, hit));
           });
-        } else if (variant[position]) {
-          let cell = variant[position];
+        } else if (at(variant)) {
+          let cell = at(variant);
           if (voice === 'lead' && degrees) {
             const n = variant.filter(Boolean).length;
             const len = Math.max(1, Math.min(16, Math.floor(n * genre.phraseBars / 2)));

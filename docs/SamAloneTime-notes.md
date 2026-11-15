@@ -168,6 +168,22 @@ Footwork and Jersey club kicks are really triplets; the grid has only 16ths, so 
 
 **Checked:** unit tests (64), and every new kit rendered offline in muted headless Chrome: all build, none throws, whole-kit loudness -11.8 to -15.2 dB RMS, in line with the older kits. Not listened to. Note: a drum preset's `level` barely matters, because the drum bus gain is reset every step from the finger's pressure (`brightness()` in `kits.js`); drum loudness comes from each piece's `volume`.
 
+## Kit cleanup and fixes (2026-11-15, Sam's review)
+
+**Removed:** Girl EDM, Emo, Dream pop, Footwork, Hardstyle, Dubstep, Psytrance, Ambient, with the presets and engine options only they used (the wobble bass, the bass envelope option, six drum presets, three bass presets). The sections above still describe them as they were built. The Ambient regression snapshot became a French house one (`web/french-house-snapshot.json`), since French house is the default kit.
+
+**Fixed, per Sam:**
+- Drill lead: was a plinky piano; now an eerie sliding flute (new `flute` lead, `glide`), with longer notes so the slides are heard.
+- Trap lead: was the piano-like `keys`; now a dark FM bell (new `bell` lead).
+- Lo-fi lead: was a pluck; now a soft vibraphone (`bell` with low brightness, long decay).
+- Jersey club: every sound replaced: a boomy kick and cracking clap (`jersey` drums), 808 bass, a bed squeak as the lead (new `squeak` lead: a chirp that flicks up a fifth and back), orchestra hits on the pad (`orchHit`). Patterns unchanged.
+- Boom bap rhythm: it was a half-time pattern repeating every half felt bar, so it didn't swing like boom bap. Drums and bass now use 32-step grids (one whole felt bar; the engine now accepts grids of 16 or 32 steps): kick on 1 plus late swung kicks, snare on 2 and 4, eighth hats.
+- Russian hardbass: the bass is now a "donk": a resonant square whose every note starts an octave high and drops into place in 50 ms (new bass `drop` option).
+
+**Added:** Organic house, Lounge and Disco. They are slower genres, so each genre can now set its own tempo ratio (`tempo.ratio` in `patterns.js`, default 2): Disco and Organic house follow 1.5 x heart rate, Lounge 1.25 x.
+
+**Checked:** 78 unit tests; the 16 kits whose patterns were not edited play exactly the same notes as before these engine changes (compared step by step); every changed and new kit rendered offline in muted headless Chrome with no errors, then levels rebalanced (not re-rendered after that). Not listened to.
+
 ## Dropouts report (2026-11-15)
 
 Sam heard brief silences ("clipping"): all instruments stall for a few milliseconds, with no finger lost and no BPM re-search. Cause never pinned down; Sam later reported the branch "works well", so this is closed unless it comes back. If it does, start with the `?perf` readout.

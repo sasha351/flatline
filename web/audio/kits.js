@@ -156,16 +156,6 @@ function drums(ctx, o) {
 }
 
 const DRUMS = {
-  // Brushes: soft sub kick with no click, a swishy brush snare (slow attack,
-  // no body), airy noise hats.
-  soft: {
-    level: -3, verb: -6,
-    kick: { note: 'A1', pitchDecay: 0.015, octaves: 2, decay: 0.8, volume: -4 },
-    snare: { noise: 'pink', attack: 0.02, hp: 1500, lp: 7000, decay: 0.4, volume: -6 },
-    hat: { kind: 'noise', closed: 0.09, open: 0.6, hp: 8000, lp: 14000, volume: -16 },
-    clap: { volume: -14, freq: 1500 },
-    tom: { note: 'E2', volume: -8 },
-  },
   // French house: tight four-on-the-floor kick, big filtered-disco clap, quiet hats.
   disco: {
     level: -6, verb: -18,
@@ -229,13 +219,6 @@ const DRUMS = {
 
 // New genres' kits: every preset needs kick, snare, clap and hat, since drums() builds them all.
 Object.assign(DRUMS, {
-  psy: { // tight, clicky kick that leaves the rest of the beat to the bass
-    level: -4, verb: -20,
-    kick: { note: 'E1', pitchDecay: 0.02, octaves: 5, decay: 0.22, click: -6, drive: 0.5 },
-    snare: { body: 'E3', bodyDecay: 0.1, hp: 1800, lp: 9000, decay: 0.15, volume: -12 },
-    clap: { freq: 1300, volume: -8 },
-    hat: { kind: 'metal', closed: 0.02, open: 0.2, hp: 9000, volume: -20 },
-  },
   trap: { // long 808 kick, sharp clap, crisp hats (rolls use the closed hat)
     level: -6, verb: -16,
     kick: { note: 'F1', pitchDecay: 0.08, octaves: 3, decay: 1.1, drive: 0.3, volume: 0 },
@@ -243,34 +226,12 @@ Object.assign(DRUMS, {
     clap: { freq: 1300, volume: -1 },
     hat: { kind: 'noise', closed: 0.02, open: 0.3, hp: 9000, volume: -15 },
   },
-  dub: { // heavy kick, huge snare
-    level: -4, verb: -12,
-    kick: { note: 'F1', pitchDecay: 0.04, octaves: 4, decay: 0.5, click: -8, drive: 0.5 },
-    snare: { body: 'E3', bodyDecay: 0.15, noise: 'white', hp: 1200, lp: 10000, decay: 0.3, volume: 0 },
-    clap: { freq: 1200, volume: -6 },
-    hat: { kind: 'noise', closed: 0.03, open: 0.25, hp: 8000, volume: -18 },
-  },
-  hardstyle: { // a long, very distorted kick
-    level: -4,
-    kick: { note: 'F1', pitchDecay: 0.08, octaves: 6, decay: 0.45, click: -6, drive: 1, volume: 0 },
-    snare: { body: 'E3', bodyDecay: 0.1, hp: 1800, lp: 9000, decay: 0.15, volume: -12 },
-    clap: { freq: 1100, volume: -2 },
-    hat: { kind: 'noise', closed: 0.03, open: 0.2, hp: 7500, volume: -20 },
-  },
   dembow: { // round kick, short snappy snare
     level: -4, verb: -16,
     kick: { note: 'G1', pitchDecay: 0.04, octaves: 4, decay: 0.35, click: -10, drive: 0.3 },
     snare: { body: 'A3', bodyDecay: 0.06, noise: 'white', hp: 2500, lp: 10000, decay: 0.1, volume: -3 },
     clap: { freq: 1300, volume: -8 },
     hat: { kind: 'noise', closed: 0.03, open: 0.2, hp: 8500, volume: -20 },
-  },
-  footwork: { // short 808 kick, clap, metal hats, rim
-    level: -6, verb: -16,
-    kick: { note: 'F1', pitchDecay: 0.05, octaves: 3, decay: 0.45, drive: 0.3 },
-    snare: { body: 'E3', bodyDecay: 0.1, hp: 1800, lp: 9000, decay: 0.15, volume: -12 },
-    clap: { freq: 1500, volume: -4 },
-    hat: { kind: 'metal', closed: 0.02, open: 0.2, hp: 9000, volume: -22 },
-    rim: { note: 'E5', volume: -10 },
   },
   groove: { // hard groove: driven kick, dry clap, metal hats, a rim and pitched toms for the rolling percussion
     level: -6, verb: -16,
@@ -309,13 +270,6 @@ Object.assign(DRUMS, {
     clap: { freq: 1300, volume: -8 },
     hat: { kind: 'noise', closed: 0.02, open: 0.25, hp: 9000, volume: -16 },
   },
-  emo: { // a live-sounding kit: snappy kick, cracking snare, washy hats
-    level: -6, verb: -14,
-    kick: { note: 'A1', pitchDecay: 0.03, octaves: 3, decay: 0.28, click: -6, drive: 0.3 },
-    snare: { body: 'E3', bodyDecay: 0.12, noise: 'white', hp: 1000, lp: 10000, decay: 0.2, volume: -2 },
-    clap: { freq: 1200, volume: -10 },
-    hat: { kind: 'metal', closed: 0.06, open: 0.4, hp: 7000, volume: -20 },
-  },
   metal: { // tight, clicky kick for fast double-kick, ringing snare, bright cymbals
     level: -6, verb: -14,
     kick: { note: 'A1', pitchDecay: 0.015, octaves: 3, decay: 0.14, click: -2, drive: 0.4, volume: -6 },
@@ -331,6 +285,30 @@ Object.assign(DRUMS, {
     hat: { kind: 'noise', closed: 0.03, open: 0.25, hp: 8000, lp: 13000, volume: -20 },
     rim: { note: 'E5', volume: -6, decay: 0.05 },
   },
+  jersey: { // a hard, boomy kick with a long tail, a cracking loud clap, tiny hats
+    level: -6, verb: -14,
+    kick: { note: 'E1', pitchDecay: 0.05, octaves: 6, decay: 0.45, click: -6, drive: 0.5, volume: -4 },
+    snare: { body: 'E3', bodyDecay: 0.1, hp: 1800, lp: 9000, decay: 0.15, volume: -12 },
+    clap: { freq: 1600, volume: -5 },
+    hat: { kind: 'metal', closed: 0.015, open: 0.15, hp: 10000, volume: -24 },
+  },
+  organic: { // soft round kick, light clap, shaker hats, rim, congas (the tom)
+    level: -6, verb: -12,
+    kick: { note: 'F1', pitchDecay: 0.03, octaves: 3, decay: 0.45, drive: 0.1, volume: -2 },
+    snare: { body: 'E3', bodyDecay: 0.1, hp: 1800, lp: 9000, decay: 0.15, volume: -12 },
+    clap: { freq: 1400, volume: -10 },
+    hat: { kind: 'noise', closed: 0.035, open: 0.2, hp: 9000, lp: 14000, volume: -18 },
+    rim: { note: 'E5', volume: -14 },
+    tom: { note: 'D3', volume: -10 },
+  },
+  lounge: { // brushed: soft kick, cross-stick rim, quiet washy ride
+    level: -6, verb: -10,
+    kick: { note: 'A1', pitchDecay: 0.02, octaves: 2, decay: 0.3, volume: -4 },
+    snare: { noise: 'pink', attack: 0.02, hp: 1500, lp: 7000, decay: 0.3, volume: -10 },
+    clap: { freq: 1400, volume: -14 },
+    hat: { kind: 'noise', closed: 0.07, open: 0.4, hp: 6000, lp: 11000, volume: -20 },
+    rim: { note: 'E5', volume: -8, decay: 0.04 },
+  },
   club: { // punchy kick and a loud clap
     level: -6, verb: -16,
     kick: { note: 'G1', pitchDecay: 0.03, octaves: 4, decay: 0.3, click: -8, drive: 0.4 },
@@ -342,6 +320,7 @@ Object.assign(DRUMS, {
 
 // ---------------------------------------------------------------- bass
 // type 'mono':   MonoSynth with a 24 dB filter envelope; `osc` may be 'fat...' (3 detuned voices).
+//                `drop`: each note starts this many semitones high and falls in 50 ms (the hardbass donk).
 // type 'rubber': sine plus a square-modulated FM layer (-10 dB), both through the drive.
 // type 'soft':   plain Synth, long and round.
 // `layers` holds extra voices (the rubber FM) triggered with the main one.
@@ -374,13 +353,13 @@ function bass(ctx, o) {
       oscillator: String(o.osc).startsWith('fat') ? { type: o.osc, count: 3, spread: 25 } : { type: o.osc ?? 'sawtooth' },
       portamento: glide,
       filter: { type: 'lowpass', Q: o.q ?? 2, rolloff: -24 },
-      envelope: o.env ?? { attack: 0.005, decay: 0.3, sustain: 0.6, release: 0.25 }, // `env`: e.g. hardstyle's swelling reverse bass
+      envelope: { attack: 0.005, decay: 0.3, sustain: 0.6, release: 0.25 },
       filterEnvelope: { attack: 0.005, decay: 0.25, sustain: 0.25, release: 0.3, baseFrequency: 150, octaves: o.octaves ?? 2.5 },
     }));
     setTone = (hr, t) => {
       const cutoff = hrLin(hr, o.filterLo ?? 100, o.filterHi ?? 600);
       syn.filter.frequency.setTargetAtTime(cutoff, t, 0.1);
-      if (!o.wobble) character.frequency.setTargetAtTime(cutoff, t, 0.1); // a wobble bass moves this filter itself (play)
+      character.frequency.setTargetAtTime(cutoff, t, 0.1);
     };
   }
   // At press 0 the distortion is fully dry: Tone's curve at amount 0 isn't unity gain.
@@ -392,7 +371,6 @@ function bass(ctx, o) {
   syn.connect(drive);
   fmLayer?.connect(drive);
   const dur = o.dur ?? '8n';
-  let wobbles = 0; // `wobble`: cycles per note, taken in turn
   const update = (heart, t) => {
     const grit = heart?.settled
       ? Math.min(0.35, Math.max(0, 0.4 * (heart.press ?? 0.5) * (o.grit ?? 1)))
@@ -407,15 +385,10 @@ function bass(ctx, o) {
       update(heart, t);
       const length = p.duration ?? dur;
       syn.triggerAttackRelease(n, length, t, p.velocity);
-      if (o.wobble && typeof length === 'number') { // dubstep: the filter opens and closes n times over the note, so it locks to the tempo
-        const cycles = o.wobble[wobbles++ % o.wobble.length], f = character.frequency;
-        const lo = o.filterLo ?? 150, hi = Math.min(4000, hrLin(heart.hr, 900, o.filterHi ?? 2500)); // a faster heart opens it further
-        f.cancelScheduledValues?.(t);
-        f.setValueAtTime(lo, t);
-        for (let k = 0; k < cycles; k++) {
-          f.linearRampToValueAtTime(hi, t + ((k + 0.5) * length) / cycles);
-          f.linearRampToValueAtTime(lo, t + ((k + 1) * length) / cycles);
-        }
+      if (o.drop) { // hardbass "donk": each note starts `drop` semitones high and falls into place in 50 ms (after trigger's own set)
+        const hz = 440 * 2 ** ((p.notes[0] - 69) / 12);
+        syn.frequency.setValueAtTime(hz * 2 ** (o.drop / 12), t);
+        syn.frequency.exponentialRampToValueAtTime(hz, t + 0.05);
       }
       for (const l of layers) l.triggerAttackRelease(n, length, t, 0.5 + 0.5 * p.velocity);
     },
@@ -429,6 +402,8 @@ const BASS = {
   pluck: { type: 'mono', osc: 'square', glide: 0, level: -8, dur: '16n', octaves: 3, filterLo: 250, filterHi: 1200, q: 4 },
   rubber: { type: 'rubber', glide: 0.06, level: -4, dur: '16n', filter: 900 },
   pump: { type: 'mono', osc: 'fatsawtooth', glide: 0, level: -6, dur: '16n', octaves: 4, filterLo: 300, filterHi: 1400, q: 3, grit: 1.2 },
+  // Donk: the hardbass bass. A square through a resonant filter that snaps shut, each note dropping an octave into place.
+  donk: { type: 'mono', osc: 'square', glide: 0, level: -14, dur: '16n', octaves: 4, filterLo: 250, filterHi: 900, q: 7, grit: 1.2, drop: 12 },
   // Reese: detuned saws kept dark, so the beating between them is the sound. Long notes.
   reese: { type: 'mono', osc: 'fatsawtooth', glide: 0.05, level: -5, dur: '4n', octaves: 1.5, filterLo: 120, filterHi: 500, q: 1 },
   // Acid: one saw through a resonant filter with a deep envelope; the heart rate opens the cutoff.
@@ -437,12 +412,6 @@ const BASS = {
   sub: { type: 'soft', osc: 'sine', glide: 0.03, dur: '4n', level: -8, filter: 400, grit: 0.8 },
   // 808: a long sine that glides into the next note when they overlap.
   808: { type: 'soft', osc: 'sine', glide: 0.09, dur: '2n', level: -10, filter: 600, grit: 1.2 },
-  // Psytrance roll: short, tight, slightly open saw notes.
-  psy: { type: 'mono', osc: 'sawtooth', level: -7, dur: '16n', octaves: 2.5, filterLo: 250, filterHi: 900, q: 3, env: { attack: 0.002, decay: 0.08, sustain: 0.2, release: 0.04 } },
-  // Dubstep wobble: `wobble` lists the filter cycles per note, taken in turn.
-  wobble: { type: 'mono', osc: 'fatsawtooth', level: -6, octaves: 1, filterLo: 150, filterHi: 2500, q: 4, grit: 1.2, wobble: [4, 8, 2, 6, 3] },
-  // Hardstyle reverse bass: swells in, cuts off dead, heavily distorted.
-  reverse: { type: 'mono', osc: 'fatsawtooth', level: -8, octaves: 1.5, filterLo: 500, filterHi: 1800, q: 2, grit: 1.8, env: { attack: 0.16, decay: 0.01, sustain: 1, release: 0.02 } },
 };
 
 // ---------------------------------------------------------------- lead
@@ -451,6 +420,10 @@ const BASS = {
 // type 'supersaw': 7-voice fat saw plus an octave-up copy (-8 dB), lightly distorted.
 // type 'pluck':    PluckSynth. Ignores velocity.
 // type 'keys':     piano-like: a few partials with a hard attack that rings down.
+// type 'bell':     FM bell or mallet: `harmonicity`, `index` (brightness of the strike) and `decay` set the
+//                  instrument: trap bell, vibraphone, kalimba. `glide` slides between notes.
+// type 'flute':    breathy triangle with vibrato; `glide` slides between notes (drill), `attack` softens it.
+// type 'squeak':   Jersey club's bed squeak: a short buzzy chirp, pitch flicking up and back, high band-pass.
 // type 'guitar':   distorted electric guitar: a plucked string driven hard through a tanh clipper (`gain`, default 6).
 // type 'cowbell':  phonk's melodic 808 cowbell: two square waves at the 808's 1 : 1.48 ratio, a short
 //                  ringing decay, high-passed and driven. The note sets the lower square's pitch.
@@ -506,6 +479,24 @@ function lead(ctx, o) {
     syn = saw(0); up = saw(-8);
     const drive = add(new Tone.Distortion({ distortion: 0.3, wet: 0.6 })).connect(head);
     syn.connect(drive); up.connect(drive);
+  } else if (o.type === 'bell') {
+    const decay = o.decay ?? 1.2;
+    syn = add(new Tone.FMSynth({
+      harmonicity: o.harmonicity ?? 3.5, modulationIndex: o.index ?? 8, portamento: o.glide ?? 0,
+      envelope: { attack: 0.001, decay, sustain: 0, release: decay * 0.5 },
+      modulationEnvelope: { attack: 0.001, decay: decay * 0.35, sustain: 0, release: 0.2 },
+    }));
+  } else if (o.type === 'flute') {
+    const vib = add(new Tone.Vibrato({ frequency: 5, depth: o.vibrato ?? 0.08 })).connect(head);
+    syn = add(new Tone.Synth({
+      oscillator: { type: 'triangle' }, portamento: o.glide ?? 0,
+      envelope: { attack: o.attack ?? 0.04, decay: 0.2, sustain: 0.8, release: 0.25 },
+    }));
+    syn.connect(vib); driven = true;
+  } else if (o.type === 'squeak') {
+    const bp = add(new Tone.Filter({ type: 'bandpass', frequency: 2400, Q: 3 })).connect(head);
+    syn = add(new Tone.Synth({ oscillator: { type: 'square' }, envelope: { attack: 0.002, decay: 0.08, sustain: 0, release: 0.03 } }));
+    syn.connect(bp); driven = true;
   } else if (o.type === 'guitar') {
     const g = o.gain ?? 6;
     const drive = add(new Tone.WaveShaper((x) => Math.tanh(g * x) / Math.tanh(g), 1024)).connect(head);
@@ -544,6 +535,12 @@ function lead(ctx, o) {
         bell.triggerAttackRelease(hz * COWBELL, p.duration ?? dur, t, p.velocity);
       } else syn.triggerAttackRelease(midi(p.notes[0]), p.duration ?? dur, t, p.velocity);
       if (up) up.triggerAttackRelease(midi(p.notes[0] + 12), p.duration ?? dur, t, p.velocity);
+      if (o.type === 'squeak') { // the creak: up a fifth and back in 80 ms (after trigger's own set)
+        const hz = 440 * 2 ** ((p.notes[0] - 69) / 12);
+        syn.frequency.setValueAtTime(hz * 0.85, t);
+        syn.frequency.exponentialRampToValueAtTime(hz * 1.5, t + 0.035);
+        syn.frequency.exponentialRampToValueAtTime(hz, t + 0.08);
+      }
       if (o.type === 'chop') { // vocal scoop: start ~2 semitones sharp, settle in 40 ms (after trigger's own set)
         const hz = Tone.Frequency(p.notes[0], 'midi').toFrequency();
         syn.frequency.setValueAtTime(hz * 2 ** (2 / 12), t);
@@ -572,6 +569,9 @@ const LEAD = {
   keys: { type: 'keys', dur: '8n', verb: -12, level: -8 },
   cowbell: { type: 'cowbell', verb: -14, level: -13 },
   guitar: { type: 'guitar', dur: '8n', verb: -14, level: -17 },
+  bell: { type: 'bell', dur: '8n', verb: -10, level: -8 },
+  flute: { type: 'flute', dur: '8n', verb: -10, level: -8 },
+  squeak: { type: 'squeak', dur: '16n', verb: -16, level: -8 },
 };
 
 // ---------------------------------------------------------------- pad
@@ -635,7 +635,7 @@ function scratch(ctx, o) {
   };
 }
 
-// type 'vox' (footwork, Jersey club): the pad finger plays chopped vocal stabs, not chords. Each cell is
+// type 'vox' (phonk, hyperpop): the pad finger plays chopped vocal stabs, not chords. Each cell is
 // one short syllable on the chord root, an octave up, cycling through the vowels a o e i; the cell
 // length is cut to at most `maxLen` seconds, so fast cells stutter. Heart: heart rate sets the brightness.
 function vox(ctx, o) {
@@ -730,6 +730,8 @@ const PAD = {
     chorus: { rate: 0.6, depth: 0.5 }, verb: -8, level: -12,
   },
   scratch: { type: 'scratch', verb: -14, level: -2 },
+  // Orchestra hit: a bright, wide, very short brassy chord.
+  orchHit: { osc: 'fatsquare', spread: 20, attack: 0.001, decay: 0.25, sustain: 0, release: 0.2, hold: 0.2, chorus: { rate: 1, depth: 0.3 }, verb: -10, level: -14 },
   vox: { type: 'vox', verb: -12, level: 5 },
   // Strings: slow-swelling detuned saws.
   strings: { osc: 'fatsawtooth', spread: 25, attack: 0.6, decay: 1, sustain: 0.8, release: 1.5, chorus: { rate: 0.4, depth: 0.4 }, verb: -6, level: -18 },
@@ -803,23 +805,13 @@ export const KITS = {
     lead: { ...LEAD.chop, brightLo: 1500, brightHi: 6500, echoBase: 0.12 },
     pad: { ...PAD.organ, filterLo: 800, filterHi: 4500 },
   }),
-  // Slow and spacious: soft brushed drums in an 8 s room, round bass,
-  // plucks echoing on dotted quarters, airy pad.
-  Ambient: makeKit({
-    tail: 10,
-    reverb: { decay: 8, preDelay: 0.05, wet: 1 },
-    drums: { ...DRUMS.soft, brightness: 7000 },
-    bass: { ...BASS.soft, filter: 500, filterLo: 90, filterHi: 360, dur: '2n' },
-    lead: { ...LEAD.pluck, brightLo: 500, brightHi: 3000, echoBase: 0.12 },
-    pad: { ...PAD.air, filterLo: 280, filterHi: 1800, hold: 5 },
-  }),
   // Hard and fast: long distorted kick, offbeat fat-saw bass, supersaw lead, rave stabs.
   'Russian hardbass': makeKit({
     tail: 3,
     pump: true,
     reverb: { decay: 1, preDelay: 0.01, wet: 0.4 },
     drums: { ...DRUMS.hard, brightness: 12500 },
-    bass: BASS.pump,
+    bass: BASS.donk,
     lead: { ...LEAD.supersaw, brightLo: 2000, brightHi: 8000 },
     pad: { ...PAD.rave, filterLo: 900, filterHi: 5000 },
   }),
@@ -850,7 +842,7 @@ export const KITS = {
     reverb: { decay: 3, preDelay: 0.02, wet: 0.7 },
     drums: { ...DRUMS.dusty, brightness: 6500 },
     bass: { ...BASS.soft, filter: 450, dur: '4n' },
-    lead: { ...LEAD.pluck, delay: { pingpong: true, time: '4n', feedback: 0.3, send: -10 }, brightLo: 500, brightHi: 2500, echoBase: 0.1 },
+    lead: { ...LEAD.bell, harmonicity: 4, index: 1.5, decay: 1.8, level: 0, delay: { pingpong: true, time: '4n', feedback: 0.3, send: -12 }, brightLo: 600, brightHi: 3000, echoBase: 0.1 }, // vibraphone
     pad: { ...PAD.keys, filterLo: 500, filterHi: 2500 },
   }),
   // Old-school boom bap rap, half-time and swung: hard kick and cracking snare, low sub bass,
@@ -863,43 +855,14 @@ export const KITS = {
     lead: { ...LEAD.keys, brightLo: 700, brightHi: 3000 },
     pad: PAD.scratch,
   }),
-  // Rolling 16th bass after every kick, tight clicky kick, squiggly saw lead with echo, distant chords.
-  'Psytrance': makeKit({
-    tail: 4,
-    pump: 0.8,
-    reverb: { decay: 3, preDelay: 0.02, wet: 0.6 },
-    drums: { ...DRUMS.psy, brightness: 11000 },
-    bass: BASS.psy,
-    lead: { ...LEAD.supersaw, delay: { pingpong: true, time: '8n.', feedback: 0.45, send: -6 }, level: -12, brightLo: 1200, brightHi: 5000, echoBase: 0.25 },
-    pad: { ...PAD.air, attack: 1, release: 3, level: -22, filterLo: 400, filterHi: 2000 },
-  }),
   // Half-time: long 808 kick and gliding 808 bass, hi-hat rolls, dark bell melody, held chords.
   'Trap': makeKit({
     tail: 4,
     reverb: { decay: 2.5, preDelay: 0.02, wet: 0.6 },
     drums: { ...DRUMS.trap, brightness: 11000 },
     bass: BASS[808],
-    lead: { ...LEAD.keys, brightLo: 800, brightHi: 3500 },
+    lead: { ...LEAD.bell, index: 10, decay: 1.4, level: -2, brightLo: 1500, brightHi: 6000 }, // dark trap bell
     pad: { ...PAD.air, attack: 0.8, release: 2, level: -20, filterLo: 350, filterHi: 1800 },
-  }),
-  // Half-time: heavy kick and huge snare, wobble bass, vocal-chop lead, dark held chords.
-  'Dubstep': makeKit({
-    tail: 4,
-    reverb: { decay: 2.5, preDelay: 0.02, wet: 0.6 },
-    drums: { ...DRUMS.dub, brightness: 10000 },
-    bass: BASS.wobble,
-    lead: { ...LEAD.chop, level: 0, brightLo: 1200, brightHi: 5000, echoBase: 0.15 },
-    pad: { ...PAD.air, attack: 0.8, release: 2.5, level: -20, filterLo: 300, filterHi: 1600 },
-  }),
-  // Four-on-the-floor: very distorted kick, reverse bass in every gap, euphoric supersaw, big chords.
-  'Hardstyle': makeKit({
-    tail: 3,
-    pump: true,
-    reverb: { decay: 2, preDelay: 0.01, wet: 0.5 },
-    drums: { ...DRUMS.hardstyle, brightness: 12000 },
-    bass: BASS.reverse,
-    lead: { ...LEAD.supersaw, delay: { pingpong: true, time: '8n.', feedback: 0.3, send: -10 }, brightLo: 2000, brightHi: 8000, echoBase: 0.15 },
-    pad: { ...PAD.rave, level: -12, filterLo: 900, filterHi: 5000 },
   }),
   // Half-time dembow: round kick and snappy snare, sub bass, plucked melody, offbeat piano stabs.
   'Reggaeton': makeKit({
@@ -910,24 +873,15 @@ export const KITS = {
     lead: { ...LEAD.pluck, delay: { pingpong: true, time: '8n', feedback: 0.25, send: -12 }, brightLo: 900, brightHi: 4500, echoBase: 0.1 },
     pad: { ...PAD.keys, decay: 0.3, hold: 0.3, level: -10, filterLo: 800, filterHi: 3500 },
   }),
-  // Fast skittering kicks, sub bass, sparse bell notes, stuttering vocal chops from the fourth finger.
-  'Footwork': makeKit({
-    tail: 3,
-    reverb: { decay: 1.8, preDelay: 0.01, wet: 0.5 },
-    drums: { ...DRUMS.footwork, brightness: 10000 },
-    bass: BASS.sub,
-    lead: { ...LEAD.keys, level: -10, brightLo: 900, brightHi: 3500 },
-    pad: PAD.vox,
-  }),
-  // Bouncy five-kick bar and loud clap, short bass, vocal-chop lead, chopped vocal stabs from the fourth finger.
+  // Bouncy five-kick bar on a boomy kick and cracking clap, 808 bass, the bed squeak as the lead, orchestra hits.
   'Jersey club': makeKit({
     tail: 3,
     pump: 0.85,
     reverb: { decay: 1.5, preDelay: 0.01, wet: 0.5 },
-    drums: { ...DRUMS.club, brightness: 10500 },
-    bass: { ...BASS.pluck, level: -10 },
-    lead: { ...LEAD.chop, level: -8, brightLo: 1500, brightHi: 6000, echoBase: 0.12 },
-    pad: { ...PAD.vox, maxLen: 0.1 },
+    drums: { ...DRUMS.jersey, brightness: 11000 },
+    bass: { ...BASS[808], glide: 0.04, level: -10 },
+    lead: { ...LEAD.squeak, level: 6, brightLo: 3000, brightHi: 7000 }, // the bed squeak
+    pad: { ...PAD.orchHit, level: -4, filterLo: 1500, filterHi: 5000 },
   }),
   // Percussive looping techno: driven kick, rolling toms and rims, shuffled metal hats, funky bass stabs,
   // one-note piano stabs, organ chords.
@@ -950,15 +904,6 @@ export const KITS = {
     bass: { ...BASS[808], grit: 2.5 },
     lead: { ...LEAD.cowbell, brightLo: 2500, brightHi: 7000 },
     pad: { ...PAD.vox, maxLen: 0.18, filterLo: 1200, filterHi: 3000 },
-  }),
-  // Half-time and hazy: soft drums in a big room, round bass, shimmering echoed plucks, chorused major-seventh chords.
-  'Dream pop': makeKit({
-    tail: 8,
-    reverb: { decay: 6, preDelay: 0.04, wet: 0.9 },
-    drums: { ...DRUMS.soft, brightness: 7000 },
-    bass: { ...BASS.soft, filter: 500, dur: '2n' },
-    lead: { ...LEAD.pluck, delay: { pingpong: true, time: '8n.', feedback: 0.5, send: -6 }, verb: -2, brightLo: 900, brightHi: 4000, echoBase: 0.25 },
-    pad: { ...PAD.air, chorus: { rate: 0.5, depth: 0.6 }, attack: 1.2, release: 4, level: -16, filterLo: 500, filterHi: 2800 },
   }),
   // Fast and overloaded: distorted kick, hi-hat rolls, distorted 808, bright supersaw hooks, chipmunk vocal chops.
   'Hyperpop': makeKit({
@@ -985,7 +930,7 @@ export const KITS = {
     reverb: { decay: 2.5, preDelay: 0.02, wet: 0.55 },
     drums: { ...DRUMS.drill, brightness: 11000 },
     bass: { ...BASS[808], glide: 0.12 },
-    lead: { ...LEAD.keys, level: -10, brightLo: 800, brightHi: 3500 },
+    lead: { ...LEAD.flute, glide: 0.12, vibrato: 0.1, level: -14, delay: { time: '8n.', feedback: 0.3, send: -12 }, brightLo: 900, brightHi: 3500, echoBase: 0.15 }, // eerie sliding flute
     pad: { ...PAD.strings, level: -12, filterLo: 500, filterHi: 2500 },
   }),
   // Half-time, swung and smooth: soft kick and finger snaps, round bass, talkbox lead, electric piano.
@@ -996,15 +941,6 @@ export const KITS = {
     bass: { ...BASS.soft, filter: 450, glide: 0.06, dur: '4n' },
     lead: { ...LEAD.talkbox, level: 2, brightLo: 900, brightHi: 3500, echoBase: 0.12 },
     pad: { ...PAD.keys, filterLo: 500, filterHi: 2800 },
-  }),
-  // Midwest emo: driving beat, melodic bass, twinkly clean-guitar arpeggios, crunchy major-seventh strums.
-  'Emo': makeKit({
-    tail: 3,
-    reverb: { decay: 1.8, preDelay: 0.01, wet: 0.45 },
-    drums: { ...DRUMS.emo, brightness: 9500 },
-    bass: { ...BASS.pluck, osc: 'sawtooth', level: -10, dur: '8n', filterLo: 450, filterHi: 1400, q: 2 },
-    lead: { ...LEAD.pluck, dur: '8n', delay: { pingpong: true, time: '8n.', feedback: 0.25, send: -14 }, verb: -10, level: -6, brightLo: 1500, brightHi: 5000, echoBase: 0.12 },
-    pad: { ...PAD.powerChords, drive: 0.35, level: -18, filterLo: 1200, filterHi: 4000 },
   }),
   // Double-kick 16ths on a tight clicky kit, bass locked to the kick, a heavily driven riff, palm-muted chugs.
   'Metal': makeKit({
@@ -1025,15 +961,32 @@ export const KITS = {
     lead: { ...LEAD.supersaw, delay: { pingpong: true, time: '8n.', feedback: 0.3, send: -10 }, level: -9, brightLo: 2500, brightHi: 8000, echoBase: 0.15 },
     pad: { ...PAD.rave, spread: 40, level: -6, filterLo: 1200, filterHi: 6000 },
   }),
-  // Sugary future bass, half-time: punchy kit with hat rolls, 808 sub, high vocal-chop lead,
-  // wide supersaw chords pumped hard so they swell after every beat.
-  'Girl EDM': makeKit({
+  // Slow, warm house: soft kick, shakers, congas and rims, deep rolling bass, kalimba, warm pad.
+  'Organic house': makeKit({
+    tail: 5,
+    pump: 0.85,
+    reverb: { decay: 3, preDelay: 0.02, wet: 0.6 },
+    drums: { ...DRUMS.organic, brightness: 9000 },
+    bass: { type: 'mono', osc: 'triangle', level: -8, dur: '16n', octaves: 1.5, filterLo: 200, filterHi: 600, q: 1 },
+    lead: { ...LEAD.bell, harmonicity: 7, index: 2, decay: 0.6, level: 0, delay: { pingpong: true, time: '8n.', feedback: 0.35, send: -10 }, brightLo: 1500, brightHi: 5000, echoBase: 0.15 }, // kalimba
+    pad: { ...PAD.air, attack: 1, release: 3, level: -18, filterLo: 400, filterHi: 2200 },
+  }),
+  // Relaxed and jazzy: brushed kit, upright-style bass, soft flute, electric piano.
+  'Lounge': makeKit({
+    tail: 5,
+    reverb: { decay: 2.5, preDelay: 0.02, wet: 0.55 },
+    drums: { ...DRUMS.lounge, brightness: 7000 },
+    bass: { ...BASS.soft, glide: 0.03, dur: '4n', filter: 500, level: -5 },
+    lead: { ...LEAD.flute, attack: 0.07, vibrato: 0.06, brightLo: 900, brightHi: 3500 },
+    pad: { ...PAD.keys, filterLo: 600, filterHi: 2800 },
+  }),
+  // Four-on-the-floor with offbeat open hats, octave bass, funky clean guitar, string stabs and swells.
+  'Disco': makeKit({
     tail: 4,
-    pump: 0.45,
-    reverb: { decay: 2.5, preDelay: 0.02, wet: 0.6 },
-    drums: { ...DRUMS.trap, brightness: 12500 },
-    bass: { ...BASS[808], level: -12 },
-    lead: { ...LEAD.chop, delay: { pingpong: true, time: '8n.', feedback: 0.3, send: -10 }, level: 0, brightLo: 2500, brightHi: 7000, echoBase: 0.18 },
-    pad: { ...PAD.rave, spread: 45, attack: 0.02, release: 0.4, level: -10, filterLo: 1500, filterHi: 6500 },
+    reverb: { decay: 2, preDelay: 0.02, wet: 0.55 },
+    drums: { ...DRUMS.disco, brightness: 11000 },
+    bass: { ...BASS.pluck, level: -11, filterLo: 300, filterHi: 1200, q: 3 },
+    lead: { ...LEAD.guitar, gain: 1.5, dur: '32n', level: -9, brightLo: 2000, brightHi: 6000 },
+    pad: { ...PAD.strings, attack: 0.05, release: 0.6, level: -10, filterLo: 1200, filterHi: 5000 },
   }),
 };

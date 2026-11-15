@@ -10,7 +10,7 @@ import { phraseSeed, note, SCALE, ROOT } from './audio/mapping.js';
 import { createEvolution, snapToChord } from './audio/evolution.js';
 import { rng, makeMotif, develop } from './audio/melody.js';
 
-const names = ['French house', 'UK garage', 'Ambient', 'Russian hardbass', 'Drum and bass', 'Acid techno', 'Lo-fi', 'Boom bap', 'Psytrance', 'Trap', 'Dubstep', 'Hardstyle', 'Reggaeton', 'Footwork', 'Jersey club', 'Hard groove', 'Phonk', 'Dream pop', 'Hyperpop', 'Rock', 'Drill', 'R&B', 'Emo', 'Metal', 'EDM', 'Girl EDM'];
+const names = ['French house', 'UK garage', 'Russian hardbass', 'Drum and bass', 'Acid techno', 'Lo-fi', 'Boom bap', 'Trap', 'Reggaeton', 'Jersey club', 'Hard groove', 'Phonk', 'Hyperpop', 'Rock', 'Drill', 'R&B', 'Metal', 'EDM', 'Organic house', 'Lounge', 'Disco'];
 
 test('genre names, tempo ranges, defaults, phrase lengths, and swing', () => {
   assert.deepEqual(Object.keys(GENRES), names);
@@ -21,30 +21,25 @@ test('genre names, tempo ranges, defaults, phrase lengths, and swing', () => {
   for (const [name, def, bars] of [
     ['French house', 123, 4],
     ['UK garage', 133, 4],
-    ['Ambient', 72, 8],
     ['Russian hardbass', 155, 4],
     ['Drum and bass', 172, 4],
     ['Acid techno', 132, 4],
     ['Lo-fi', 150, 4],
     ['Boom bap', 176, 4],
-    ['Psytrance', 145, 4],
     ['Trap', 150, 4],
-    ['Dubstep', 140, 4],
-    ['Hardstyle', 150, 4],
     ['Reggaeton', 184, 4],
-    ['Footwork', 160, 4],
     ['Jersey club', 140, 4],
     ['Hard groove', 140, 4],
     ['Phonk', 140, 4],
-    ['Dream pop', 160, 4],
     ['Hyperpop', 170, 4],
     ['Rock', 140, 4],
     ['Drill', 142, 4],
     ['R&B', 150, 4],
-    ['Emo', 160, 4],
     ['Metal', 170, 4],
     ['EDM', 128, 4],
-    ['Girl EDM', 150, 4],
+    ['Organic house', 118, 4],
+    ['Lounge', 96, 4],
+    ['Disco', 118, 4],
   ]) {
     assert.deepEqual(createTempo(name)([HEART_OFF, HEART_OFF, HEART_OFF, HEART_OFF], 0.1), { song: def, heart: 0 });
     assert.equal(GENRES[name].phraseBars, bars);
@@ -61,11 +56,11 @@ test('genre grids are valid and variants change musical content', () => {
         const cells = voice === 'drums' ? Object.values(grid).flat() : grid;
         if (voice === 'drums') {
           for (const drumGrid of Object.values(grid)) {
-            assert.equal(drumGrid.length, 16, `${name} ${voice} grid length`);
+            assert.ok([16, 32].includes(drumGrid.length), `${name} ${voice} grid length`);
             assert.ok(drumGrid.every((cell) => [0, 0.5, 1].includes(cell)));
           }
         } else {
-          assert.equal(grid.length, 16, `${name} ${voice} grid length`);
+          assert.ok([16, 32].includes(grid.length), `${name} ${voice} grid length`); // one bar or two
         }
         for (const cell of cells) {
           if (voice !== 'drums') {
@@ -84,31 +79,27 @@ test('genre grids are valid and variants change musical content', () => {
   }
 });
 
-test('genre identity and ambient density constraints', () => {
+test('genre identity constraints', () => {
   const house = GENRES['French house'].patterns.drums[0];
   assert.deepEqual(house.kick, [1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0]);
   assert.deepEqual(GENRES['Russian hardbass'].patterns.bass[0].map((v) => !!v), [false, false, true, false, false, false, true, false, false, false, true, false, false, false, true, false]);
   assert.notDeepEqual(GENRES['UK garage'].patterns.drums[0].kick, house.kick);
-  for (const grid of GENRES.Ambient.patterns.lead) {
-    assert.ok(grid.filter(Boolean).length <= 2);
-  }
-  for (const grid of GENRES.Ambient.patterns.pad) {
-    assert.ok(grid.filter(Boolean).length <= 1);
-  }
-  for (const grid of GENRES.Ambient.patterns.drums) {
-    assert.ok(Object.values(grid).reduce((n, v) => n + v.filter(Boolean).length, 0) <= 4);
-  }
-  for (const grid of GENRES.Ambient.patterns.bass) {
-    assert.ok(grid.filter(Boolean).length <= 2);
-  }
+});
+
+test('a slow genre follows the heart at its own ratio', () => {
+  const heart = { on: true, settled: true, hr: 80 };
+  assert.equal(createTempo('Disco')([heart], 0.1).song, 120, 'disco: 1.5 x 80');
+  assert.equal(createTempo('Lounge')([heart], 0.1).song, 100, 'lounge: 1.25 x 80');
+  assert.equal(createTempo('Trap')([heart], 0.1).song, 160, 'everything else: 2 x 80');
+  assert.equal(songBpm(80, 1.5), 120);
 });
 
 test('tempo follows the average of the stabilised hearts: lock, dead band, hold, release', () => {
-  const tempo = createTempo('Ambient');
+  const tempo = createTempo('Drill');
   const heart = (hr, settled = true) => ({ on: true, settled, hr });
   const run = (hearts, secs) => { let r; for (let i = 0; i < secs * 10; i++) r = tempo(hearts, 0.1); return r; };
-  assert.deepEqual(run([HEART_OFF, HEART_OFF], 1), { song: 72, heart: 0 });
-  assert.deepEqual(run([heart(90, false), HEART_OFF], 1), { song: 72, heart: 0 }, 'a calibrating finger does not count');
+  assert.deepEqual(run([HEART_OFF, HEART_OFF], 1), { song: 142, heart: 0 });
+  assert.deepEqual(run([heart(90, false), HEART_OFF], 1), { song: 142, heart: 0 }, 'a calibrating finger does not count');
   assert.deepEqual(tempo([heart(70), heart(80), heart(120, false), HEART_OFF], 0.1), { song: 150, heart: 75 }, 'locks to twice the mean');
   assert.equal(run([heart(71), heart(80)], 60).song, 150, 'a 0.5 BPM shift of the average stays inside the dead band');
   const moved = run([heart(80), heart(80)], 60);
@@ -119,7 +110,7 @@ test('tempo follows the average of the stabilised hearts: lock, dead band, hold,
   const held = run([HEART_OFF, HEART_OFF], HOLD_S - 1);
   assert.equal(held.song, moved.song, 'all fingers off: the tempo holds');
   assert.ok(held.heart > 79);
-  assert.deepEqual(run([HEART_OFF, HEART_OFF], 2), { song: 72, heart: 0 }, 'then the genre default returns');
+  assert.deepEqual(run([HEART_OFF, HEART_OFF], 2), { song: 142, heart: 0 }, 'then the genre default returns');
 });
 
 const settled = (press = 0.5, breath = 0, hr = 75) => ({ on: true, settled: true, hr, press, breath });
@@ -151,7 +142,7 @@ test('phrase evolution is reproducible, neutral while unsettled, and bounded', (
   };
   assert.deepEqual(runBars('UK garage', input), runBars('UK garage', input));
   assert.deepEqual(
-    createEvolution('Ambient').next({
+    createEvolution('Lo-fi').next({
       raws: [0, 0, 0, 0], hearts: Array(4).fill(HEART_OFF), step: 0, stepSeconds: 0.125,
     }),
     [],
@@ -231,7 +222,7 @@ test('kit boundaries expose four bounded, disposable, duration-aware kits', () =
   }});
   const env = { Tone, GENRES: {} };
   runInNewContext(source, env);
-  const names = ['French house', 'UK garage', 'Ambient', 'Russian hardbass', 'Drum and bass', 'Acid techno', 'Lo-fi', 'Boom bap', 'Psytrance', 'Trap', 'Dubstep', 'Hardstyle', 'Reggaeton', 'Footwork', 'Jersey club', 'Hard groove', 'Phonk', 'Dream pop', 'Hyperpop', 'Rock', 'Drill', 'R&B', 'Emo', 'Metal', 'EDM', 'Girl EDM'];
+  const names = ['French house', 'UK garage', 'Russian hardbass', 'Drum and bass', 'Acid techno', 'Lo-fi', 'Boom bap', 'Trap', 'Reggaeton', 'Jersey club', 'Hard groove', 'Phonk', 'Hyperpop', 'Rock', 'Drill', 'R&B', 'Metal', 'EDM', 'Organic house', 'Lounge', 'Disco'];
   assert.deepEqual(Object.keys(env.KITS), names);
   const hearts = {
     drums: { hr: 75, press: 0.5, breath: 0 },
@@ -274,16 +265,21 @@ test('kit boundaries expose four bounded, disposable, duration-aware kits', () =
       kit.pad({ notes: [52, 55, 59], duration: 2, velocity: 0.6 }, hearts.pad, 11);
       assert.ok(sweepsAt(11, 2).every((x) => x.time <= 11.35 + 1e-9), 'a long cell still scratches fast');
     }
+    if (name === 'Russian hardbass') { // the donk: every bass note starts an octave up and drops into place
+      kit.bass({ notes: [45], duration: 0.1, velocity: 0.8 }, hearts.bass, 40);
+      assert.ok(automation.some((x) => x.method === 'set' && x.time === 40 && x.value === 220), 'starts an octave up');
+      assert.ok(automation.some((x) => x.method === 'expRamp' && Math.abs(x.time - 40.05) < 1e-9 && x.value === 110), 'falls to the note in 50 ms');
+    }
+    if (name === 'Jersey club') { // the bed squeak: flicks up and comes back
+      kit.lead({ notes: [69], duration: 0.1, velocity: 0.7 }, hearts.lead, 41);
+      const sq = automation.filter((x) => x.method === 'expRamp' && x.time > 41 && x.time <= 41.08 + 1e-9).map((x) => x.value);
+      assert.ok(sq.length === 2 && sq[0] > sq[1], `squeak ${sq}`);
+    }
     if (name === 'Phonk') { // the cowbell: two squares at the 808's 800/540 ratio, struck together
       kit.lead({ notes: [69], duration: 0.2, velocity: 0.7 }, hearts.lead, 30);
       const hz = triggers.filter(({ args }) => args[2] === 30).map(({ args }) => args[0]).sort((a, b) => a - b);
       assert.equal(hz.length, 2, 'two oscillators');
       assert.ok(hz[0] === 440 && Math.abs(hz[1] / hz[0] - 800 / 540) < 1e-9, `cowbell pitches ${hz}`);
-    }
-    if (name === 'Dubstep') { // the wobble: the bass filter opens and closes inside one note
-      kit.bass({ notes: [41], duration: 1, velocity: 0.8 }, hearts.bass, 20);
-      const ramps = automation.filter((x) => x.method === 'ramp' && x.time > 20 && x.time <= 21 + 1e-9);
-      assert.ok(ramps.length >= 4 && Math.max(...ramps.map((x) => x.value)) > 3 * Math.min(...ramps.map((x) => x.value)), `wobble: ${ramps.length} ramps`);
     }
     if (name === 'UK garage') {
       kit.lead({ notes: [60], duration: 0.2, velocity: 0.7 }, hearts.lead, 8);
@@ -623,7 +619,7 @@ test('draw callbacks retain kit ownership and exact scheduled timing', () => {
 test('rapid kit replacement silences and disposes each replaced kit once', async () => {
   const audio = createAudioHarness();
   audio.handlers.kit('UK garage');
-  audio.handlers.kit('Ambient');
+  audio.handlers.kit('Lo-fi');
   audio.handlers.kit('Russian hardbass');
   await new Promise((resolve) => setTimeout(resolve, 0));
   assert.deepEqual(audio.created.slice(0, 3).map((kit) => kit.silences), [1, 1, 1]);
@@ -760,9 +756,9 @@ const runSteps = (name, steps, raws = [0x1234, 0x5678, 0x9abc, 0xdef0], hr = 75)
 const pc = (midi) => ((midi % 12) + 12) % 12;
 const chordPcs = (key, chord) => chord.map((d) => pc(note(d, 0, key.scale, key.root)));
 
-test('Ambient output is unchanged', () => {
-  const snap = JSON.parse(readFileSync(new URL('./ambient-snapshot.json', import.meta.url), 'utf8'));
-  assert.deepEqual(JSON.parse(JSON.stringify(runSteps('Ambient', 16 * 24, undefined, 80))), snap);
+test('French house output is unchanged', () => { // a regression guard for the shared engine (evolution.js)
+  const snap = JSON.parse(readFileSync(new URL('./french-house-snapshot.json', import.meta.url), 'utf8'));
+  assert.deepEqual(JSON.parse(JSON.stringify(runSteps('French house', 16 * 24, undefined, 80))), snap);
 });
 
 test('note() honours scale and root, defaults unchanged', () => {
@@ -785,7 +781,7 @@ test('motif with n = 7 resolves to root, 5th or octave root', () => {
   assert.ok([0, 4, 7].includes(d[d.findLastIndex((x) => x !== null)]));
 });
 
-for (const name of ['French house', 'UK garage', 'Russian hardbass', 'Drum and bass', 'Acid techno', 'Lo-fi', 'Boom bap', 'Psytrance', 'Trap', 'Dubstep', 'Hardstyle', 'Reggaeton', 'Footwork', 'Jersey club', 'Hard groove', 'Phonk', 'Dream pop', 'Hyperpop', 'Rock', 'Drill', 'R&B', 'Emo', 'Metal', 'EDM', 'Girl EDM']) {
+for (const name of ['French house', 'UK garage', 'Russian hardbass', 'Drum and bass', 'Acid techno', 'Lo-fi', 'Boom bap', 'Trap', 'Reggaeton', 'Jersey club', 'Hard groove', 'Phonk', 'Hyperpop', 'Rock', 'Drill', 'R&B', 'Metal', 'EDM', 'Organic house', 'Lounge', 'Disco']) {
   test(`${name}: notes in key, lead strong beats on chord tones`, () => {
     const { key } = GENRES[name];
     const steps = runSteps(name, 16 * GENRES[name].phraseBars * 2);
@@ -821,25 +817,25 @@ test('genre signatures', () => {
   assert.deepEqual(g['Drum and bass'].patterns.drums[0].snare.map((w, i) => (w === 1 ? i : -1)).filter((i) => i >= 0), [4, 12], 'DnB snare on 2 and 4');
   assert.ok(g['Drum and bass'].patterns.drums[0].kick[0] && g['Drum and bass'].patterns.drums[0].kick[10] && !g['Drum and bass'].patterns.drums[0].kick[8], 'DnB two-step kick');
   assert.ok(g['Acid techno'].patterns.bass.every((v) => v.filter(Boolean).length >= 6), 'acid bass line is busy');
-  assert.ok(g.Psytrance.patterns.bass.every((v) => [1, 2, 3, 5, 6, 7].every((i) => v[i]) && !v[0] && !v[4]), 'psytrance bass rolls after each kick, never on it');
   // trap roll: two closed hats inside one 16th, half a step apart, and no plain hat on that step
   const hatSteps = runSteps('Trap', 16 * 8).map((evs) => evs.filter((e) => e.voice === 'drums' && e.params.drum === 'hat').map((e) => e.offset));
   const rolls = hatSteps.filter((o) => o.length > 1);
   assert.ok(rolls.length > 0, 'trap plays hat rolls');
   for (const o of rolls) assert.deepEqual(o, [0, 0.0625], 'hat roll: two 32nd notes, no plain hat on top');
-  assert.ok(g.Hardstyle.patterns.bass.every((v) => v.every((c, i) => !c || i % 4 === 1)), 'reverse bass sits right after each kick');
   for (const v of g['Hard groove'].patterns.drums) assert.ok(v.tom.some(Boolean) && v.rim.some(Boolean) && v.kick.filter(Boolean).length >= 4, 'hard groove: four-on-the-floor plus toms and rims');
   for (const v of g.Rock.patterns.drums) assert.ok(v.kick[0] && v.kick[8] && v.snare[4] && v.snare[12], 'rock beat: kick 1 and 3, snare 2 and 4');
   assert.ok(g.Rock.key.chords.every((c) => c.length === 2 && c[1] - c[0] === 4), 'rock pad plays power chords (root and fifth)');
-  for (const name of ['Dream pop', 'Drill', 'R&B']) assert.ok(g[name].halfTime && g[name].patterns.drums.every((v) => (v.snare ?? v.rim)[8]), `${name}: half-time, backbeat on 3`);
+  for (const name of ['Drill', 'R&B']) assert.ok(g[name].halfTime && g[name].patterns.drums.every((v) => (v.snare ?? v.rim)[8]), `${name}: half-time, backbeat on 3`);
   assert.ok(g.Metal.patterns.drums.some((v) => v.kick.every(Boolean)), 'metal has a double-kick 16th variant');
-  assert.ok(g.Emo.patterns.lead.every((v) => v.filter(Boolean).length >= 11), 'emo lead is busy twinkly arpeggios');
   assert.ok(g.EDM.patterns.drums.every((v) => [0, 4, 8, 12].every((i) => v.kick[i])) && g.EDM.patterns.bass.every((v) => v[2] && v[6] && !v[0]), 'EDM: four-on-the-floor, offbeat bass');
   for (const v of g.Reggaeton.patterns.drums) assert.ok(v.snare[6] && v.snare[12], 'dembow snare');
-  for (const v of g['Boom bap'].patterns.drums) {
+  for (const v of g['Boom bap'].patterns.drums) { // one felt bar in 32 steps: each felt 16th is two steps
+    assert.equal(v.kick.length, 32);
     assert.ok(v.kick[0] === 1, 'boom on the one');
-    assert.deepEqual(v.snare.map((w, i) => (w === 1 ? i : -1)).filter((i) => i >= 0), [8], 'bap on beat 3 (half-time)');
+    assert.deepEqual(v.snare.map((w, i) => (w === 1 ? i : -1)).filter((i) => i >= 0), [8, 24], 'bap on felt beats 2 and 4');
+    assert.ok(v.kick.some((w, i) => w && i % 4 === 2), 'a late kick on a swung felt 16th');
   }
+  for (const name of ['Disco', 'Organic house']) assert.equal(g[name].tempo.ratio, 1.5, `${name} runs at 1.5 x heart rate`);
   // half-time swing: the delayed steps are the off 8ths (2, 6, 10, 14), by a quarter of an 8th
   const late = runSteps('Boom bap', 16).map((evs, step) => [step, evs.map((e) => e.offset)]);
   for (const [step, offsets] of late) for (const o of offsets) assert.equal(o, step % 4 === 2 ? 0.25 * 2 * 0.125 : 0, `boom bap swing at step ${step}`);
