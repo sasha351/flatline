@@ -11,7 +11,7 @@ Status (2026-11-14): all four are built on this branch and pass the repo's tests
 
 ## Test setup: two sensors
 
-Sensors 2 and 3 got unplugged, so every hardware test on this branch is run on two sensors: **sensor 1 (drums) and sensor 4 (pad)**. Bass and lead can be played by a stand-in heartbeat (click their blob after connecting). A stand-in runs at a random 60-100 BPM, so it is left out of the average heart rate and the song tempo.
+Sensors 2 and 3 got unplugged, so every hardware test on this branch is run on two sensors: **sensor 1 (drums) and sensor 4 (pad)**. Bass and lead can be played by a stand-in heartbeat (click their blob after connecting). A stand-in is not a real reading, so it runs at about the average of the real fingers' stabilised BPM and follows it (bass 2 BPM under, lead 2 over, so they don't beat in unison; 75 until a real finger has stabilised). It is also left out of the average heart rate and the song tempo, so it cannot move them (Sam, 2026-11-15; before that it ran at a random 60-100).
 
 ## 1. BPM variation (measured)
 

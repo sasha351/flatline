@@ -203,7 +203,7 @@ import { createHeart, HR_DEFAULT } from './audio/heart.js';
 console.log('heart ok');
 
 import { on } from './bus.js';
-import { start } from './core.js';
+import { start, standInBpms } from './core.js';
 
 {
   let got = null;
@@ -217,6 +217,28 @@ import { start } from './core.js';
   assert.deepEqual(Object.keys(got.ch[0]).sort(), ['ac', 'amp', 'beat', 'bpm', 'finger', 'held', 'inst', 'stable']);
   assert.deepEqual(status, ['idle', 'running']);
 }
+{
+  // a stand-in heartbeat (clicked blob) runs at about the real finger's BPM, not a rate of its own
+  const { simTapped: wrap } = await import('./serial.js');
+  const { emit } = await import('./bus.js');
+  let frame = null, tappedNow = [];
+  on('frame', (d) => (frame = d));
+  on('tapped', (t) => (tappedNow = t));
+  let feed;
+  await start((onFrame) => { feed = onFrame; return async () => {}; });
+  emit('tap', 1);
+  assert.deepEqual(tappedNow, [false, true, false, false]);
+  // drive it the way the connect handler does: real finger at 92 BPM on sensor 1, a stand-in on sensor 2
+  const viaStandIn = wrap(feed, standInBpms);
+  assert.deepEqual(standInBpms(), [0, 73, 0, 0], 'before any real reading: the starting rate');
+  for (let i = 0; i < 50 * 40; i++) viaStandIn([Math.round(100000 - 400 * Math.sin((i * 2 * Math.PI * 92) / 60 / 50)), 0, 0, 0]);
+  assert.ok(Math.abs(standInBpms()[1] - 90) < 2, `stand-in rate follows the real finger: ${standInBpms()[1]}`);
+  assert.ok(frame.ch[0].stable && Math.abs(frame.ch[0].bpm - 92) < 2, `real finger reads 92: ${frame.ch[0].bpm}`);
+  assert.ok(frame.ch[1].stable && Math.abs(frame.ch[1].bpm - 90) < 3, `stand-in sits near the real rate: ${frame.ch[1].bpm}`);
+  emit('tap', 1);
+  assert.deepEqual(tappedNow, [false, false, false, false]);
+}
+console.log('stand-in ok');
 {
   // overlapping starts are serialized; resolvers are held by hand
   const log = [];
