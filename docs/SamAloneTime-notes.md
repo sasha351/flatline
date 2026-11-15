@@ -7,7 +7,7 @@ Working notes for the `SamAloneTime` branch. The branch covers four requests fro
 3. Make the OLED heart-rate display consistent with the dashboard's.
 4. Give the BPM setter more rules and consistency, and maybe add a song BPM and an average heart BPM readout to the dashboard.
 
-Status (2026-11-14): points 1, 2 and 4 are built on this branch (3, the OLED, is left as it is at Sam's request) and pass the repo's tests and replays of the recordings. Not yet tried on the real sensors: see "Still to test" at the bottom.
+Status (2026-11-15): points 1, 2 and 4 are built on this branch (3, the OLED, is left as it is at Sam's request) and pass the repo's tests and replays of the recordings. Not yet tried on the real sensors: see "Still to test" at the bottom.
 
 ## Test setup: two sensors
 
@@ -108,8 +108,13 @@ On the two play logs (sensors 1-3 together): 21-40 changes a minute before, 8-10
 
 ## Still to test
 
-- **On the real sensors (1 and 4):** how long the ghost lasts, whether the number is steady once shown, how the song tempo feels. Everything above was measured on recordings and the simulator.
-- The ghost and readouts were checked once in headless Chrome with `?demo`; the shimmer itself has not been watched in motion.
+Sam tried the branch on the real sensors on 2026-11-15 and reports it works well. Not separately checked: the ghost shimmer in motion (only seen once in headless Chrome), and the new kits by ear.
+
+## Other changes on the branch
+
+- **Genre button and stand-in heartbeats** (Sam's earlier work, committed here as one commit): the Pi's GPIO26 button sends a `b` line that steps to the next kit (`pi/flatline.py`, `web/serial.js`, `web/ui/ui.js`); clicking a blob starts a stand-in heartbeat (`web/core.js`). Both are described in the README.
+- **Save log removed:** the button and `web/ui/log.js` are deleted. `tools/analyze-log.mjs` is kept for old logs.
+- **`.gitignore`:** ignores `__pycache__/`; two Python cache files were committed by mistake and removed.
 
 ## More kits (2026-11-14)
 
@@ -132,9 +137,9 @@ On the two play logs (sensors 1-3 together): 21-40 changes a minute before, 8-10
 
 **How it was checked.** Unit tests, plus every kit rendered offline with the real Tone.js in headless Chrome, two bars per voice: all eight build, none throws, no bad samples, and the new kits' loudness is in the range of the old ones (whole-kit RMS -12.4 to -16.7 dB against -12.6 to -17.8 dB). **Nobody has listened to them yet**: the levels are measured, the character (especially the scratch) needs ears.
 
-## Dropouts report (2026-11-15), not yet explained
+## Dropouts report (2026-11-15)
 
-Sam heard brief silences ("clipping"): all instruments stall for a few milliseconds, with no finger lost and no BPM re-search. Cause not found yet.
+Sam heard brief silences ("clipping"): all instruments stall for a few milliseconds, with no finger lost and no BPM re-search. Cause never pinned down; Sam later reported the branch "works well", so this is closed unless it comes back. If it does, start with the `?perf` readout.
 
 - **Ruled out:** tempo changes. In a real browser (offline render) the 16th-note clock stays even through the retargets this branch makes, with no stall and no tempo jump.
 - **Likely contributor:** Claude's own test runs. They rendered audio in headless Chrome on the same laptop, used a lot of CPU, and played through the speakers (Sam heard them). Later test runs must use `--mute-audio`. Two older headless Chrome test browsers (profiles `/tmp/claude-1000/perf-prof-*`, PIDs 191685 and 191925, started about 9.5 h earlier) were also still running, one at about 30% CPU plus GPU.

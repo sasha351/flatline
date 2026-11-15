@@ -125,9 +125,14 @@ To add a kit, add a genre to `web/audio/patterns.js` and a kit of the same name 
 
 Each active sensor evolves its voice from its recent signal history and the shared musical grid. Kit choice is the only creative control; everything else is operational. Pulse amplitude and beat-interval variation are bounded modulation sources, not calibrated finger-pressure or breathing-rate readings.
 
+**Genre button.** A push button between GPIO26 (pin 37) and any GND on the Pi steps to the next kit, wrapping from the last to the first. The Pi sends a `b` line over the serial link on each press (debounced 40 ms); with no button wired nothing happens.
+
+**Stand-in heartbeats.** With sensors missing, click a voice's blob (bass and lead, while sensors 2 and 3 are unplugged) to start a stand-in heartbeat for it, and click again to stop. It runs at about the average of the real fingers' stabilised BPM and does not count toward the song tempo. `CLICK_SIM` in `web/core.js` lists which voices can be clicked; empty it when the sensors are back.
+
 Handy URL tricks:
 - **Not all four sensors wired?** `?fill=sim` simulates the channels that read `0`. The real ones play from your fingers.
 - **A sensor died?** `?sim=4` (or `?sim=3,4`) simulates it for one visit. List it in `BROKEN_SENSORS` in `web/serial.js` to make that the default. A simulated sensor plays a heartbeat whenever every working sensor has a finger on it, so the four can still merge.
+- **Save log is gone.** The button and `web/ui/log.js` were removed, so `tools/analyze-log.mjs` has no in-app source for its CSVs. It still replays any log in the old format (older files are in `~/Downloads/flatline-log-*.csv`).
 - **Sound breaking up?** `?perf` shows a small readout: how many notes were scheduled late, the longest stall of the page, and slow frames. Late notes or stalls mean the page is being held up; all zeros means the cause is outside it (CPU load from other programs, or the audio device).
 
 ## Test
