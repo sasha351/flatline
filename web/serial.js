@@ -11,7 +11,10 @@ export function parseLine(line) {
 export const PI_GADGET = { usbVendorId: 0x0525, usbProductId: 0xa4a7 };
 const anyPort = () => new URLSearchParams(globalThis.location?.search).get('port') === 'any';
 
-export async function connectSerial(onFrame, onClose) {
+// The Pi sends this line once per press of the genre button (GPIO26, see pi/flatline.py).
+export const isButton = (line) => line.trim() === 'b';
+
+export async function connectSerial(onFrame, onClose, onButton) {
   const port = await navigator.serial.requestPort(anyPort() ? {} : { filters: [PI_GADGET] });
   await port.open({ baudRate: 115200 }); // ignored by the gadget; the Arduino sketches use it
   const decoder = new TextDecoderStream();
@@ -29,7 +32,9 @@ export async function connectSerial(onFrame, onClose) {
         buf = lines.pop();
         for (const l of lines) {
           const f = parseLine(l);
-          if (f) onFrame(f); // bad lines are dropped
+          if (f) onFrame(f);
+          else if (isButton(l)) onButton?.();
+          // other lines are dropped
         }
       }
     } catch {
@@ -114,5 +119,19 @@ export function simFill(onFrame, route = () => null, rate = 50) {
       real = Math.round(r - dc + SIM_DC);
     } else dc = null;
     onFrame(sim.map((s, ch) => (ch === to ? real : s)));
+  };
+}
+
+// Stand-in players: channels with a BPM in bpms() (0 = none) get a simulated pulse at that rate
+// in place of their reading; the rest pass through. core.js turns them on and off from clicks.
+export function simTapped(onFrame, bpms, rate = 50) {
+  const phase = [0, 0, 0, 0];
+  return (raws) => {
+    const b = bpms();
+    onFrame(raws.map((r, ch) => {
+      if (!b[ch]) return r;
+      phase[ch] += (2 * Math.PI * b[ch]) / 60 / rate;
+      return Math.round(SIM_DC - 400 * Math.sin(phase[ch]) + Math.random() * 40);
+    }));
   };
 }

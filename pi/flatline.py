@@ -4,6 +4,8 @@
 Reads 4x MAX30102 (all fixed at 0x57), one per I2C bus, and streams raw IR as
 CSV: `ir0,ir1,ir2,ir3` at 50 Hz. A missing sensor reads 0. This is the same
 format the old Arduino sketch sent, so the web app doesn't change.
+A push button between GPIO26 (pin 37) and any GND sends a line `b` on each press:
+the web app steps to the next genre.
 
 Usage: flatline.py [OUT]   OUT defaults to /dev/ttyGS0 (USB gadget serial);
                              pass - to print to stdout for testing over ssh.
@@ -30,6 +32,8 @@ ADDR = 0x57
 PERIOD = 0.02         # 50 Hz output
 POLL = 0.01           # FIFO poll period: twice the sample rate, so a new sample is never left waiting long
 RETRY = 2.0           # seconds between attempts to (re)open a missing sensor
+BUTTON = 26           # GPIO of the genre button (pin 37); it shorts the pin to GND, internal pull-up
+DEBOUNCE = 2          # output periods a level must hold to count: 40 ms
 
 # MAX30102 registers
 FIFO_WR_PTR, OVF_COUNTER, FIFO_RD_PTR, FIFO_DATA = 0x04, 0x05, 0x06, 0x07
@@ -228,6 +232,38 @@ class Out:
         return [l.decode(errors='replace') for l in lines]
 
 
+class Button:
+    """The genre button, sampled once per output line. pressed() is True once per press."""
+
+    def __init__(self, gpio):
+        self.h = None
+        self.down = False   # debounced state
+        self.run = 0        # samples in a row that disagree with it
+        try:
+            os.environ.setdefault('LG_WD', '/tmp')  # lgpio writes a pipe file in its working dir; the service's (/) is read-only to us
+            import lgpio
+            self.io, self.gpio = lgpio, gpio
+            self.h = lgpio.gpiochip_open(0)
+            lgpio.gpio_claim_input(self.h, gpio, lgpio.SET_PULL_UP)
+            log(f'button on GPIO{gpio}')
+        except Exception as e:  # no lgpio, or the pin is taken: run without a button
+            self.h = None
+            log(f'no button: {e}')
+
+    def pressed(self):
+        if self.h is None:
+            return False
+        try:
+            low = self.io.gpio_read(self.h, self.gpio) == 0
+        except Exception:
+            return False
+        self.run = self.run + 1 if low != self.down else 0
+        if self.run < DEBOUNCE:
+            return False
+        self.down, self.run = low, 0
+        return low
+
+
 def main():
     out = Out(sys.argv[1] if len(sys.argv) > 1 else '/dev/ttyGS0')
     load_conf()
@@ -244,10 +280,13 @@ def main():
         q = None
     for s in sensors:
         threading.Thread(target=s.run, daemon=True).start()
+    button = Button(BUTTON)
     nxt = time.monotonic()
     while True:
         vals = tuple(s.take() for s in sensors)
         out.write(','.join(map(str, vals)) + '\n')
+        if button.pressed():
+            out.write('b\n')
         if q:
             try:
                 q.put_nowait(vals)

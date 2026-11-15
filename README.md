@@ -100,7 +100,7 @@ pkill -USR1 -f flatline.py                                     # write the last 
 ```bash
 python3 tools/pulse_meter.py
 ```
-Every 2 s it pulls the last 8 s of red + IR over ssh and prints, per sensor, the signal level, pulse size, rhythm, IR/red ratio and shake, with a verdict (`GOOD pulse, 72 BPM`, `MOVING: hold still`, ...). Use it to find the right LED power and finger pressure. It covers sensors 1-3, since sensor 4 is broken. Ctrl+C stops it.
+Every 2 s it pulls the last 8 s of red + IR over ssh and prints, per sensor, the signal level, pulse size, rhythm, IR/red ratio and shake, with a verdict (`GOOD pulse, 72 BPM`, `MOVING: hold still`, ...). Use it to find the right LED power and finger pressure. Ctrl+C stops it.
 
 ## Playing
 ```bash
@@ -120,7 +120,6 @@ Each active sensor evolves its voice from its recent signal history and the shar
 Handy URL tricks:
 - **Not all four sensors wired?** `?fill=sim` simulates the channels that read `0`. The real ones play from your fingers.
 - **A sensor died?** `?sim=4` (or `?sim=3,4`) simulates it for one visit. List it in `BROKEN_SENSORS` in `web/serial.js` to make that the default. A simulated sensor plays a heartbeat whenever every working sensor has a finger on it, so the four can still merge.
-- **Save log** downloads a CSV of every reading since connecting. Replay it through the real beat detector with `node tools/analyze-log.mjs ~/Downloads/flatline-log-*.csv`. Logs note which sensors were simulated and the analyzer skips them.
 
 ## Test
 ```bash

@@ -1,7 +1,6 @@
 // Controls + status. The canvas (stage and notes lane) is drawn in stage.js.
 import { emit, on, VOICES } from '../bus.js';
 import './stage.js';
-import { bindLogButton } from './log.js';
 
 const $ = (id) => document.getElementById(id);
 const buttons = [$('connect'), $('sim'), $('reconnect')];
@@ -22,12 +21,19 @@ $('reconnect').onclick = () => press('connect');
 $('sim').onclick = () => press('simulate');
 if (new URLSearchParams(location.search).has('demo')) press('simulate'); // dev: ?demo starts the simulation for screenshots
 $('kit').onchange = (e) => emit('kit', e.target.value);
-bindLogButton($('log'));
+on('button', () => { // the Pi's push button: next genre, wrapping from the last to the first
+  const k = $('kit');
+  if (!k.options.length) return;
+  k.selectedIndex = (k.selectedIndex + 1) % k.options.length;
+  emit('kit', k.value);
+});
 
 // Debugging with ?fill=sim: click a voice's column to put the real sensor on it.
 $('stage').addEventListener('click', (e) => {
   const b = e.currentTarget.getBoundingClientRect();
-  emit('route', Math.min(VOICES.length - 1, Math.floor(((e.clientX - b.left) / b.width) * VOICES.length)));
+  const ch = Math.min(VOICES.length - 1, Math.floor(((e.clientX - b.left) / b.width) * VOICES.length));
+  emit('route', ch);
+  emit('tap', ch); // an unplugged sensor's blob: start or stop its stand-in heartbeat (core.js)
 });
 on('sensor', (s) => ($('stage').style.cursor = s == null ? '' : 'pointer'));
 

@@ -1,6 +1,6 @@
 // Sources -> per-channel signal -> 'frame' events. Owns connect/simulate and status.
 import { emit, on, VOICES } from './bus.js';
-import { connectSerial, simChannels, simFill, simSensors, startSim } from './serial.js';
+import { connectSerial, simChannels, simFill, simSensors, simTapped, startSim } from './serial.js';
 import { createChannel } from './signal.js';
 
 let stop = null;
@@ -43,12 +43,23 @@ on('route', (ch) => {
   route = ch;
   announce();
 });
-on('connect', go((onFrame, onClose) => {
+// Sensors 2 and 3 are unplugged for now: clicking their blob starts a stand-in heartbeat at a
+// random rate, and clicking it again stops it.
+const CLICK_SIM = [1, 2];         // ponytail: channels a click can stand in for; empty this when the sensors are back
+const TAP_BPM = [60, 100];        // the random rate is picked from this range at each start
+let tapped = VOICES.map(() => 0); // per channel: the stand-in's BPM, 0 = off
+on('tap', (ch) => {
+  if (filling || !CLICK_SIM.includes(ch)) return; // with ?fill=sim a click moves the real sensor instead
+  tapped = tapped.map((b, i) => (i !== ch ? b : b ? 0 : TAP_BPM[0] + Math.floor(Math.random() * (TAP_BPM[1] - TAP_BPM[0] + 1))));
+  emit('tapped', tapped.map(Boolean));
+});
+on('connect', go((frame, onClose) => {
   filling = fillMissing();
   announce();
+  const onFrame = simTapped(frame, () => tapped);
   const forced = simSensors(); // broken sensors (serial.js BROKEN_SENSORS) or ?sim=
   const out = forced.length ? simChannels(onFrame, forced) : onFrame;
-  return connectSerial(filling ? simFill(out, () => route) : out, onClose);
+  return connectSerial(filling ? simFill(out, () => route) : out, onClose, () => emit('button'));
 }));
 on('simulate', go((onFrame, onClose) => {
   filling = false;

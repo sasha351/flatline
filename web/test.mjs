@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { parseLine, simChannels, simFill, simSensors } from './serial.js';
+import { isButton, parseLine, simChannels, simFill, simSensors, simTapped } from './serial.js';
 
 assert.deepEqual(parseLine('1,2,3,4'), [1, 2, 3, 4]);
 assert.deepEqual(parseLine('100000,0,262143,5\r'), [100000, 0, 262143, 5]);
@@ -7,6 +7,8 @@ assert.equal(parseLine('1,2,3'), null);       // too few
 assert.equal(parseLine('1,2,,4'), null);      // empty field
 assert.equal(parseLine('3,4\n1,2'), null);    // partial / garbage
 assert.equal(parseLine(''), null);
+assert.equal(parseLine('b'), null);         // the Pi's button line is not a frame
+assert.ok(isButton('b') && isButton('b\r') && !isButton('1,2,3,4') && !isButton(''));
 {
   // simFill: zeros (missing sensors) become simulated pulses, real values pass through
   const out = [];
@@ -336,3 +338,20 @@ assert.deepEqual(simSensors(''), []);             // no broken sensors: nothing 
 assert.deepEqual(simSensors('?sim=none'), []);
 assert.deepEqual(simSensors('?sim=2,4,9'), [1, 3]);
 console.log('simChannels ok');
+
+{
+  // simTapped: a tapped channel gets a pulse the detector reads at the chosen rate; others pass through
+  let bpms = [0, 0, 0, 0], got = null;
+  const feed = simTapped((raws) => (got = raws), () => bpms), ch = createChannel(50);
+  feed([1, 2, 3, 4]);
+  assert.deepEqual(got, [1, 2, 3, 4]);
+  bpms = [0, 0, 84, 0];
+  let out;
+  for (let i = 0; i < 50 * 15; i++) { feed([1, 2, 3, 4]); out = ch(got[2]); }
+  assert.deepEqual([got[0], got[1], got[3]], [1, 2, 4]);
+  assert.ok(out.finger && Math.abs(out.bpm - 84) < 3, `stand-in reads 84: ${out.bpm}`);
+  bpms = [0, 0, 0, 0];
+  feed([1, 2, 3, 4]);
+  assert.equal(got[2], 3, 'tapping again hands the channel back');
+}
+console.log('simTapped ok');

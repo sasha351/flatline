@@ -14,6 +14,9 @@
 // analyser*  audio  { wave, fft }, each with .getValue(): Float32Array
 // note       audio  { voice, ...mapVoice params }, fired when the sound is heard
 // sensor*    core   0..3 = voice the real sensor plays (?fill=sim), null otherwise
+// button     core   none. The Pi's push button was pressed: the UI steps to the next kit.
+// tap        ui     0..3: that voice's blob was clicked (core toggles a stand-in heartbeat for an unplugged sensor)
+// tapped     core   boolean[4]: which voices are played by a stand-in heartbeat
 //
 // * sticky: a late subscriber gets the last value immediately.
 // Listeners ignore fields and values they don't know, so either side can add some.
