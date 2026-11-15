@@ -97,7 +97,11 @@ export function createEvolution(genreName) {
         onset = 0;
       }
 
-      const offset = step % 2 === 1 ? genre.swing * stepSeconds : 0;
+      // Swing delays every other 16th. A half-time genre is felt at half the tempo, so its 16ths are our
+      // 8ths: there the delayed steps are 2, 6, 10 and 14, by the same share of the (twice as long) note.
+      const offset = genre.halfTime
+        ? (step % 4 === 2 ? genre.swing * 2 * stepSeconds : 0)
+        : (step % 2 === 1 ? genre.swing * stepSeconds : 0);
       const position = step % 16;
       const events = [];
       const { key } = genre;
@@ -112,6 +116,9 @@ export function createEvolution(genreName) {
           const hot = heart.settled && heart.hr > 86, calm = heart.settled && heart.hr < 72;
           Object.entries(variant).forEach(([drum, grid]) => {
             if (calm && drum === 'openhat') return;
+            // One hi-hat can't be open and closed at once, and both use one synth: two hits at the same
+            // instant make Tone throw, which dropped every later note of that step. The open hat wins.
+            if (drum === 'hat' && !calm && variant.openhat?.[position]) return;
             const hit = grid[position] || (hot && drum === 'hat' && 0.4);
             if (hit) events.push(voiceEvent(voice, drum, stepSeconds, offset, heart, key, chord, hit));
           });

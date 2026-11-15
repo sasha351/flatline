@@ -113,6 +113,27 @@ On the two play logs (sensors 1-3 together): 21-40 changes a minute before, 8-10
 - The ghost and readouts were checked once in headless Chrome with `?demo`; the shimmer itself has not been watched in motion.
 - The OLED's own detector (no browser connected) is unchanged and still shows the wild numbers from section 3.
 
+## More kits (2026-11-14)
+
+**How a kit is added.** Two entries with the same name: the music in `web/audio/patterns.js` (`GENRES`: key, chords, idle tempo, swing, and three or more pattern variants for each of drums, bass, lead and pad) and the sound in `web/audio/kits.js` (`KITS`: one preset each from `DRUMS`, `BASS`, `LEAD`, `PAD`, plus reverb and sidechain `pump`). The kit menu, the Pi's genre button and the shared tests pick a new name up from those tables. `web/audio-test.mjs` lists the kit names in three places and needs the new name added.
+
+**Added:** every kit has all four voices, so they are ready for when sensors 2 and 3 are plugged back in (until then, click the bass and lead blobs for stand-in heartbeats).
+
+| Kit | Drums (sensor 1) | Bass (2) | Lead (3) | Pad (4) |
+|---|---|---|---|---|
+| Drum and bass | two-step break, cracking snare | dark reese | echoing plucks | held airy chords |
+| Acid techno | four-on-the-floor, metal hats, rim | squelching resonant line | sparse saw bleeps | offbeat rave stabs |
+| Lo-fi | half-time, dull kit | round soft bass | soft plucks | electric-piano chords |
+| Boom bap | half-time, swung, hard kick and snare | sub under the kick | chopped piano loop | **record scratches** |
+
+- Half-time kits put the snare on beat 3 only, so the beat you feel is the heart rate itself (the song still runs at twice the heart rate). `halfTime: true` in a genre moves the swing to the off 8ths.
+- The scratch is synthesised (`scratch()` in `kits.js`): a buzzy voice through an "ah" formant plus vinyl hiss, with pitch and tone swept up and back in one hit, alternating push and pull. Knobs: `SWEEP`, `MAX_S`, `hiss`.
+- New presets: drums `breaks`, `techno`, `dusty`, `boombap`; bass `reese`, `acid`, `sub`; lead `keys`; pad `keys`, `scratch`.
+
+**Bug found and fixed on the way.** A closed hat and an open hat on the same step made Tone throw ("Start time must be strictly greater than previous start time"), which dropped every later note of that step. French house hit this on steps 2, 6, 10 and 14 of two of its three drum variants. Now the open hat wins (`web/audio/evolution.js`).
+
+**How it was checked.** Unit tests, plus every kit rendered offline with the real Tone.js in headless Chrome, two bars per voice: all eight build, none throws, no bad samples, and the new kits' loudness is in the range of the old ones (whole-kit RMS -12.4 to -16.7 dB against -12.6 to -17.8 dB). **Nobody has listened to them yet**: the levels are measured, the character (especially the scratch) needs ears.
+
 ## Squeeze is kept out of this branch
 
 The experimental squeeze-for-volume work (`?squeeze`) is not on `SamAloneTime`, so it cannot affect the BPM tests. It is on the `squeeze-experiment` branch as a single commit on top of this branch's "Pi genre button" commit: `git diff SamAloneTime squeeze-experiment` (at the time it was split) is exactly the squeeze change.

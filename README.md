@@ -114,6 +114,12 @@ Pick a kit and let the hearts do the rest:
 - **UK garage**: shuffled two-step with a rim and metal hats, rubbery FM bass, chopped ah/oh vocal lead, and organ stabs
 - **Ambient**: sparse percussion, long bass swells, sustained chords, and wide melodic space
 - **Russian hardbass**: long distorted kick, offbeat fat-saw donk bass, supersaw riffs, and rave stabs
+- **Drum and bass**: fast two-step break with a cracking snare, dark reese bass, echoing plucks, and held airy chords
+- **Acid techno**: four-on-the-floor with a squelching resonant bass line, sparse saw bleeps, and offbeat rave stabs
+- **Lo-fi**: half-time and mellow, so the beat you feel is the heart rate itself: dull kit, round bass, soft plucks, electric-piano chords
+- **Boom bap**: old-school rap, half-time and swung: hard kick and cracking snare, sub bass, a chopped piano loop, and record scratches from the fourth sensor
+
+To add a kit, add a genre to `web/audio/patterns.js` and a kit of the same name to `web/audio/kits.js`; both files say how at the end of their tables.
 
 **BPM and tempo.** A finger's BPM appears once it has stabilised, about 8 s after a still finger lands; until then its number is a shimmering placeholder and it does not steer the music. The song's tempo is twice the average heart rate of every stabilised finger. It moves in whole BPM, only once the average has shifted by 2 heart BPM, only at a bar line, and it holds for 8 s after the last finger lifts. The dashboard shows both as **song bpm** and **avg heart bpm** (rules and knobs: `web/audio/tempo.js`, `web/signal.js`). While the browser is connected, the Pi's OLED prints the same BPM numbers as the dashboard.
 
