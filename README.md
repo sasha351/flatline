@@ -118,6 +118,13 @@ Pick a kit and let the hearts do the rest:
 - **Acid techno**: four-on-the-floor with a squelching resonant bass line, sparse saw bleeps, and offbeat rave stabs
 - **Lo-fi**: half-time and mellow, so the beat you feel is the heart rate itself: dull kit, round bass, soft plucks, electric-piano chords
 - **Boom bap**: old-school rap, half-time and swung: hard kick and cracking snare, sub bass, a chopped piano loop, and record scratches from the fourth sensor
+- **Psytrance**: a rolling bass on the three 16ths after every kick, a squiggly echoing saw lead, distant chords
+- **Trap**: half-time, long 808 kick and gliding 808 bass, hi-hat rolls, a dark bell melody
+- **Dubstep**: half-time, huge snare on beat 3, a wobble bass whose filter swings in time with the beat
+- **Hardstyle**: very distorted kick with a reverse bass swelling into every gap, euphoric supersaw lead
+- **Reggaeton**: half-time dembow rhythm, sub bass, plucked melody, offbeat piano stabs (fits faster heart rates best: the felt beat is the heart rate, around 90-95)
+- **Hard groove**: percussive, looping techno: four-on-the-floor under rolling toms, rims and shuffled hats, funky bass stabs, organ chords
+- **Footwork** and **Jersey club**: fast, skittering or bouncy kick patterns with vocal chops from the fourth sensor. Their kicks are really triplets; the grid only has 16th notes, so these are close stand-ins
 
 To add a kit, add a genre to `web/audio/patterns.js` and a kit of the same name to `web/audio/kits.js`; both files say how at the end of their tables.
 

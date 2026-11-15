@@ -139,6 +139,27 @@ Sam tried the branch on the real sensors on 2026-11-15 and reports it works well
 
 **How it was checked.** Unit tests, plus every kit rendered offline with the real Tone.js in headless Chrome, two bars per voice: all eight build, none throws, no bad samples, and the new kits' loudness is in the range of the old ones (whole-kit RMS -12.4 to -16.7 dB against -12.6 to -17.8 dB). **Nobody has listened to them yet**: the levels are measured, the character (especially the scratch) needs ears.
 
+## Eight more kits (2026-11-15)
+
+Picked for how they fit the tempo rule (song = 2 x heart rate, about 130-190 BPM, or a half-time feel at the heart rate itself):
+
+| Kit | Fit | What makes it |
+|---|---|---|
+| Psytrance | 145, natural | rolling bass on the three 16ths after every kick |
+| Trap | half-time | 808 kick and gliding 808 bass, **hi-hat rolls** |
+| Dubstep | half-time | snare on 3, **wobble bass** |
+| Hardstyle | 150, natural | distorted kick, **reverse bass** swelling into each gap |
+| Reggaeton | half-time | dembow rhythm; best with faster heart rates (felt beat 90-95) |
+| Footwork | 160, natural | skittering kicks, **vocal chops** from sensor 4 |
+| Jersey club | 140, natural | bouncy five-kick bar, vocal chops from sensor 4 |
+| Hard groove | 140, natural | four-on-the-floor under rolling toms, rims and shuffled hats (Sam asked for it) |
+
+Footwork and Jersey club kicks are really triplets; the grid has only 16ths, so their patterns are close stand-ins. Left out: Jungle and Trance (too close to Drum and bass and Psytrance), and disco, synthwave, afrobeats, amapiano (too slow for 2 x heart rate, too fast at half-time).
+
+**Engine additions:** `hatroll` drum lane (two closed hats in one 16th, `evolution.js`); `wobble` bass option (filter cycles per note, locked to the note length); `env` bass option (hardstyle's reverse envelope); `vox` pad type (chopped vocal stabs, `maxLen`).
+
+**Checked:** unit tests (64), and every new kit rendered offline in muted headless Chrome: all build, none throws, whole-kit loudness -11.8 to -15.2 dB RMS, in line with the older kits. Not listened to. Note: a drum preset's `level` barely matters, because the drum bus gain is reset every step from the finger's pressure (`brightness()` in `kits.js`); drum loudness comes from each piece's `volume`.
+
 ## Dropouts report (2026-11-15)
 
 Sam heard brief silences ("clipping"): all instruments stall for a few milliseconds, with no finger lost and no BPM re-search. Cause never pinned down; Sam later reported the branch "works well", so this is closed unless it comes back. If it does, start with the `?perf` readout.

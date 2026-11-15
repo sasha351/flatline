@@ -119,6 +119,11 @@ export function createEvolution(genreName) {
             // One hi-hat can't be open and closed at once, and both use one synth: two hits at the same
             // instant make Tone throw, which dropped every later note of that step. The open hat wins.
             if (drum === 'hat' && !calm && variant.openhat?.[position]) return;
+            if (drum === 'hat' && variant.hatroll?.[position]) return; // a roll owns this step's hat
+            if (drum === 'hatroll') { // trap roll: two closed hats in one 16th (32nd notes), the second a little softer
+              if (grid[position]) [0, 0.5].forEach((k, j) => events.push(voiceEvent(voice, 'hat', stepSeconds, offset + k * stepSeconds, heart, key, chord, grid[position] * (j ? 0.55 : 0.7))));
+              return;
+            }
             const hit = grid[position] || (hot && drum === 'hat' && 0.4);
             if (hit) events.push(voiceEvent(voice, drum, stepSeconds, offset, heart, key, chord, hit));
           });

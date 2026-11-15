@@ -247,4 +247,231 @@ export const GENRES = {
       ],
     },
   },
+  'Psytrance': { // rolling bass: the three 16ths after every kick; acid squiggle lead
+    key: { root: 40, scale: PHRYGIAN, chords: [[0, 2, 4], [0, 2, 4], [0, 2, 4], [1, 3, 5]] },
+    tempo: { default: 145 },
+    phraseBars: 4,
+    swing: 0,
+    patterns: {
+      drums: [
+        { kick: drum('x...x...x...x...'), clap: drum('................'), hat: drum('..x...x...x...x.'), openhat: drum('................') },
+        { kick: drum('x...x...x...x...'), clap: drum('....x.......x...'), hat: drum('..x...x...x...x.'), openhat: drum('..............x.') },
+        { kick: drum('x...x...x...x...'), clap: drum('............x...'), hat: drum('xgxgxgxgxgxgxgxg'), openhat: drum('..x...x...x...x.') },
+      ],
+      bass: [
+        line('.xxx.xxx.xxx.xxx', [note(0, -1)]),
+        line('.xxx.xxx.xxx.xxx', [note(0, -1), note(0, -1), note(1, -1), note(0, -1), note(0, -1), note(0, 0)]),
+        line('.xxx.xxx.xxx.x.x', [note(0, -1), note(0, 0), note(0, -1)]),
+      ],
+      lead: [
+        lead('x..x..x.x..x..x.', 1, 0, 1, 0, 4),
+        lead('x.xx..x.x.xx..x.', 1, 4, 3, 1, 0),
+        lead('..x..x..x..x..x.', 1, 0, 4, 6, 4, 1),
+      ],
+      pad: [
+        line('x...............', [stab(8, 0.35)]),
+        line('........x.......', [stab(8, 0.35)]),
+        line('x.......x.......', [stab(4, 0.3)]),
+      ],
+    },
+  },
+  'Trap': { // half-time: snare on beat 3, sliding 808 bass, hi-hat rolls (`hatroll`: two hats in one 16th)
+    key: { root: 41, scale: HARMONIC_MINOR, chords: [[0, 2, 4], [0, 2, 4], [5, 7, 9], [4, 6, 8]] },
+    tempo: { default: 150 },
+    phraseBars: 4,
+    swing: 0,
+    halfTime: true,
+    patterns: {
+      drums: [
+        { kick: drum('x......x..x.....'), clap: drum('........x.......'), hat: drum('x.x.x.x.x.x.x...'), hatroll: drum('..............xx'), openhat: drum('................') },
+        { kick: drum('x.....x...x..x..'), clap: drum('........x.......'), hat: drum('x.x.x...x.x.x.x.'), hatroll: drum('......xx........'), openhat: drum('................') },
+        { kick: drum('x.........x.x...'), clap: drum('........x.......'), hat: drum('x.x.x.x.x...x.x.'), hatroll: drum('..........xx....'), openhat: drum('...............x') },
+      ],
+      bass: [ // overlapping 808 notes glide into each other
+        line('x......x..x.....', [note(0, -1, 7), note(0, -1, 3), note(3, -1, 5)]),
+        line('x.....x...x..x..', [note(0, -1, 6), note(0, 0, 4), note(0, -1, 3), note(4, -1, 3)]),
+        line('x.........x.x...', [note(0, -1, 10), note(2, -1, 2), note(0, -1, 4)]),
+      ],
+      lead: [ // dark bell
+        lead('x...x...x.x.....', 2, 4, 3, 2, 0),
+        lead('..x...x.....x...', 2, 0, 2, 4),
+        lead('x.....x.x...x...', 2, 4, 5, 4, 2),
+      ],
+      pad: [
+        notes([stab(16, 0.4), ...empty().slice(1)]),
+        line('x.......x.......', [stab(8, 0.4)]),
+        notes([stab(12, 0.35), ...empty().slice(1)]),
+      ],
+    },
+  },
+  'Dubstep': { // half-time: kick on 1, snare on 3, and a wobble bass (its filter swings in time with the beat)
+    key: { root: 41, scale: MINOR, chords: [[0, 2, 4], [5, 7, 9], [3, 5, 7], [4, 6, 8]] },
+    tempo: { default: 140 },
+    phraseBars: 4,
+    swing: 0,
+    halfTime: true,
+    patterns: {
+      drums: [
+        { kick: drum('x.........x.....'), snare: drum('........x.......'), hat: drum('..x...x...x...x.') },
+        { kick: drum('x.....x.........'), snare: drum('........x.......'), hat: drum('x.x.x.x.x.x.x.x.') },
+        { kick: drum('x.........x..x..'), snare: drum('........x.....g.'), hat: drum('..x...x...x...x.') },
+      ],
+      bass: [
+        line('x.......x.......', [note(0, -1, 8), note(0, -1, 6)]),
+        line('x.....x.....x...', [note(0, -1, 6), note(0, 0, 4), note(3, -1, 4)]),
+        line('x...........x...', [note(0, -1, 12), note(4, -1, 4)]),
+      ],
+      lead: [
+        lead('x.......x.......', 2, 4, 2),
+        lead('....x.......x...', 2, 0, 3),
+        lead('x.....x.....x...', 2, 4, 3, 2),
+      ],
+      pad: [
+        notes([stab(16, 0.35), ...empty().slice(1)]),
+        line('x.......x.......', [stab(8, 0.35)]),
+        notes([stab(12, 0.3), ...empty().slice(1)]),
+      ],
+    },
+  },
+  'Hardstyle': { // four-on-the-floor; a distorted reverse bass swells up in the gap after every kick
+    key: { root: 41, scale: HARMONIC_MINOR, chords: [[0, 2, 4], [5, 7, 9], [3, 5, 7], [4, 6, 8]] },
+    tempo: { default: 150 },
+    phraseBars: 4,
+    swing: 0,
+    patterns: {
+      drums: [
+        { kick: drum('x...x...x...x...'), clap: drum('....x.......x...'), openhat: drum('................') },
+        { kick: drum('x...x...x...x...'), clap: drum('....x.......x...'), openhat: drum('..x...x...x...x.') },
+        { kick: drum('x...x...x...x.xx'), clap: drum('....x.......x...'), openhat: drum('..x...x...x.....') },
+      ],
+      bass: [
+        line('.x...x...x...x..', [note(0, -1, 3)]),
+        line('.x...x...x...x..', [note(0, -1, 3), note(0, -1, 3), note(4, -1, 3), note(0, -1, 3)]),
+        line('.x...x...x...x..', [note(0, -1, 3), note(0, 0, 3)]),
+      ],
+      lead: [ // euphoric supersaw
+        lead('x.x.x...x.x.x...', 2, 0, 2, 4, 2, 4, 7),
+        lead('x...x.x.x...x.x.', 2, 4, 2, 4, 5, 4, 2),
+        notes([note(4, 2, 4), ...empty().slice(1, 4), note(2, 2, 4), ...empty().slice(5, 8), note(0, 2, 8), ...empty().slice(9)]),
+      ],
+      pad: [
+        notes([stab(16, 0.45), ...empty().slice(1)]),
+        line('x.......x.......', [stab(8, 0.45)]),
+        line('..x...x...x...x.', [stab(1, 0.45)]),
+      ],
+    },
+  },
+  'Reggaeton': { // half-time dembow: kick on every felt beat, snare on the "a" of 1 and the "and" of 2
+    key: { root: 43, scale: MINOR, chords: [[0, 2, 4], [5, 7, 9], [2, 4, 6], [6, 8, 10]] },
+    tempo: { default: 184 },
+    phraseBars: 4,
+    swing: 0,
+    halfTime: true,
+    patterns: {
+      drums: [
+        { kick: drum('x.......x.......'), snare: drum('......x.....x...'), hat: drum('x...x...x...x...') },
+        { kick: drum('x.......x.......'), snare: drum('......x.....x...'), hat: drum('x.x.x.x.x.x.x.x.') },
+        { kick: drum('x.......x...x...'), snare: drum('......x.....x.g.'), hat: drum('x...x...x...x...') },
+      ],
+      bass: [
+        line('x.......x.......', [note(0, -1, 6)]),
+        line('x.....x.x.......', [note(0, -1, 5), note(4, -1, 2), note(0, -1, 6)]),
+        line('x.......x...x...', [note(0, -1, 6), note(0, 0, 3), note(4, -1, 3)]),
+      ],
+      lead: [
+        lead('x...x.....x.x...', 2, 4, 2, 0, 2),
+        lead('..x...x.x.......', 2, 2, 4, 3),
+        lead('x.....x...x...x.', 2, 0, 2, 4, 2),
+      ],
+      pad: [ // offbeat chord stabs, on the snare
+        line('......x.....x...', [stab(2, 0.45)]),
+        line('....x.......x...', [stab(2, 0.45)]),
+        line('......x.....x.x.', [stab(1, 0.4)]),
+      ],
+    },
+  },
+  'Footwork': { // fast, skittering kicks (16th-note stand-ins for the genre's triplets), vocal chops from the fourth finger
+    key: { root: 41, scale: MINOR, chords: [[0, 2, 4], [0, 2, 4], [3, 5, 7], [4, 6, 8]] },
+    tempo: { default: 160 },
+    phraseBars: 4,
+    swing: 0,
+    patterns: {
+      drums: [
+        { kick: drum('x..x..x...x..x..'), clap: drum('....x.......x...'), hat: drum('..x...x...x...x.'), rim: drum('...x..x...x..x..') },
+        { kick: drum('x..x..x.x..x..x.'), clap: drum('............x...'), hat: drum('x.x.x.x.x.x.x.x.'), rim: drum('................') },
+        { kick: drum('x.....x..x..x...'), clap: drum('....x.......x..x'), hat: drum('..x...x...x...x.'), rim: drum('.x....x....x....') },
+      ],
+      bass: [
+        line('x.........x.....', [note(0, -1, 6), note(3, -1, 4)]),
+        line('x.....x.........', [note(0, -1, 4), note(0, -1, 8)]),
+        line('x..x......x.....', [note(0, -1, 2), note(0, 0, 4), note(4, -1, 4)]),
+      ],
+      lead: [
+        lead('x.....x.........', 2, 4, 2),
+        lead('....x.......x...', 2, 0, 3),
+        lead('x.......x...x...', 2, 4, 3, 2),
+      ],
+      pad: [ // vocal chops: runs of short cells stutter
+        line('x.x.x.......x.x.', [stab(1, 0.6)]),
+        line('xxx...x...xxx...', [stab(1, 0.55)]),
+        line('x...x.x.x...xx.x', [stab(1, 0.6)]),
+      ],
+    },
+  },
+  'Jersey club': { // bouncy five-kick bar (16th-note stand-ins for its triplets), vocal chops from the fourth finger
+    key: { root: 43, scale: MINOR, chords: [[0, 2, 4], [5, 7, 9], [3, 5, 7], [4, 6, 8]] },
+    tempo: { default: 140 },
+    phraseBars: 4,
+    swing: 0,
+    patterns: {
+      drums: [
+        { kick: drum('x..x..x.x.x.x...'), clap: drum('....x.......x...'), hat: drum('..x...x...x...x.') },
+        { kick: drum('x...x..x..x.x.x.'), clap: drum('....x.......x...'), hat: drum('x.x.x.x.x.x.x.x.') },
+        { kick: drum('x..x..x...x.x.x.'), clap: drum('............x...'), hat: drum('..x...x...x...x.') },
+      ],
+      bass: [
+        line('x.....x.....x...', [note(0, -1, 3), note(0, -1, 3), note(4, -1, 3)]),
+        line('x.........x.....', [note(0, -1, 6), note(2, -1, 4)]),
+        line('x..x..x.....x...', [note(0, -1, 2), note(0, 0, 2), note(0, -1, 3), note(4, -1, 3)]),
+      ],
+      lead: [
+        lead('..x...x...x...x.', 2, 0, 2, 4, 2),
+        lead('x.....x.....x...', 2, 4, 3, 2),
+        lead('..x.x...x.....x.', 2, 2, 4, 3, 0),
+      ],
+      pad: [
+        line('x.x.....x.x.x...', [stab(1, 0.6)]),
+        line('..xx..x...xx..x.', [stab(1, 0.55)]),
+        line('x...xxx.....x.x.', [stab(1, 0.6)]),
+      ],
+    },
+  },
+  'Hard groove': { // percussive, looping techno: four-on-the-floor under rolling toms, rims and shuffled hats
+    key: { root: 41, scale: DORIAN, chords: [[0, 2, 4, 6], [0, 2, 4, 6], [3, 5, 7, 9], [0, 2, 4, 6]] },
+    tempo: { default: 140 },
+    phraseBars: 4,
+    swing: 0.12,
+    patterns: {
+      drums: [
+        { kick: drum('x...x...x...x...'), clap: drum('....x.......x...'), hat: drum('xgxgxgxgxgxgxgxg'), openhat: drum('..x...x...x...x.'), rim: drum('.x..x.x..x...x..'), tom: drum('...x.....x..x...') },
+        { kick: drum('x...x...x...x...'), clap: drum('....x.......x..x'), hat: drum('xgxgxgxgxgxgxgxg'), openhat: drum('..x...x...x...x.'), rim: drum('..x..x...x..x...'), tom: drum('.x.....x...x..x.') },
+        { kick: drum('x...x...x...x.x.'), clap: drum('....x.......x...'), hat: drum('xxgxxxgxxxgxxxgx'), openhat: drum('..x...x...x...x.'), rim: drum('.x.x...x.x...x.x'), tom: drum('......x.x.....x.') },
+      ],
+      bass: [ // short funky stabs between the kicks
+        line('..x..x....x..x..', [note(0, -1), note(0, 0), note(0, -1), note(4, -1)]),
+        line('..xx..x...x.x...', [note(0, -1), note(0, 0), note(0, -1), note(0, -1), note(6, -1)]),
+        line('.x.x..x..x.x..x.', [note(0, -1), note(0, -1), note(2, -1), note(0, 0), note(0, -1), note(4, -1)]),
+      ],
+      lead: [ // one-note stabs, repeated like a loop
+        lead('..x.....x.x.....', 2, 0, 0, 4),
+        lead('x.....x.....x...', 2, 4, 4, 3),
+        lead('...x...x...x..x.', 2, 0, 2, 0, 4),
+      ],
+      pad: [ // organ chord stabs
+        line('......x.......x.', [stab(1, 0.5)]),
+        line('..x.......x.....', [stab(2, 0.5)]),
+        line('...x..x....x..x.', [stab(1, 0.45)]),
+      ],
+    },
+  },
 };
