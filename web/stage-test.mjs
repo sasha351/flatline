@@ -44,7 +44,7 @@ assert.equal(s.els.text.children[0].textContent, 72);
 assert.equal(s.els.text.children[1].textContent, 'drums · bpm · sensor');
 assert.equal(s.els.text.children[2].textContent, '00', 'a calibrating BPM is a ghost, not a number');
 assert.equal(s.els.text.children[3].textContent, 'bass · finding your pulse');
-assert.equal(s.els.text.children[4].textContent, '00', 'a BPM that is not stable yet stays hidden');
+assert.equal(s.els.text.children[4].textContent, 72, 'a BPM shows before it is stable, like the OLED');
 assert.ok(s.latest.flash[0] > .95, 'beat survives an intervening non-beat frame');
 assert.equal(s.paths[0].length, 2);
 assert.equal(s.paths[0][0][1], s.paths[1][0][1], 'each trace uses its own maximum');

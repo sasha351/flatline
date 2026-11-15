@@ -7,7 +7,9 @@ on, the balls slide together into one ball whose colour regions are a dye swirl 
 
 run(q) is the entry point; flatline.py starts it in its own process, so its CPU never holds the
 GIL of the sensor threads. q carries (ir0, ir1, ir2, ir3) tuples at 50 Hz, ('n', voice, drum, velocity)
-note messages from the browser, and ('k', name) when the browser switches kit. Spikes follow the notes; with no
+note messages from the browser, ('k', name) when the browser switches kit, and ('h', avg, [bpm x4]):
+the browser's BPM readout, shown as-is so the OLED and the web page always agree (our own detector's
+numbers are the fallback when no browser is sending). Spikes follow the notes; with no
 note for NOTE_HOLD seconds they follow heartbeats. A kit change slides a banner with the genre name down from the top.
 
   python3 oled.py --demo       drive the real panel with simulated fingers (stop flatline first)
@@ -33,6 +35,7 @@ NOTE_HOLD = 2.0   # seconds after a note during which heartbeats do not fire spi
 W, H = 128, 64
 NAMES = ['DR', 'BS', 'LD', 'PD']
 BANNER_IN, BANNER_HOLD, BANNER_OUT = 0.25, 1.5, 0.25  # seconds: slide down, stay, slide back up
+HEART_STALE = 3.0  # seconds without an ('h', ...) message before our own BPMs show instead (browser re-sends every 1 s)
 BANNER_CHARS = 14  # per line at double size (8 px a character); longer names wrap at a space
 
 
@@ -272,11 +275,14 @@ class Model:
         self.last_note = -9.0
         self.kicked = False
         self.banner = ([''], -99.0)     # (lines, time shown) of the latest kit change
+        self.heart = (0.0, [0.0] * 4, -99.0)  # (avg, per-finger BPMs, time received) from the browser
 
     def handle(self, msg, t):
         """One queue message: a raw tuple of four ints, ('n', voice, drum, velocity) or ('k', kit name)."""
         if msg[0] == 'k':
             self.banner = (banner_lines(msg[1]), t)
+        elif msg[0] == 'h':
+            self.heart = (msg[1], msg[2], t)
         elif msg[0] == 'n':
             self.t = t
             _, voice, drum, vel = msg
@@ -286,6 +292,15 @@ class Model:
                 self.fire(voice, kind, vel)
         else:
             self.feed(msg, t)
+
+    def readout(self):
+        """(avg, per-finger BPMs) to show: the browser's while it is sending, so both screens agree, else our own."""
+        avg, bpms, got = self.heart
+        if self.t - got < HEART_STALE:
+            return avg, bpms
+        own = [b if f else 0.0 for f, b in zip(self.finger, self.bpm)]
+        known = [b for b in own if b > 0]
+        return (sum(known) / len(known) if known else 0.0), own
 
     def feed(self, raws, t):
         self.t = t
@@ -381,11 +396,11 @@ def render(m, buf):
     buf[:] = bytes(len(buf))
     e = smooth(m.merge)
     px = {}
+    avg, bpms = m.readout()
     if m.merge >= 1:
         px = ball(64, 30, 13, radii(m, 0, 13, True), dye_fill(m, 13))
-        known = [m.bpm[i] for i in range(4) if m.finger[i] and m.bpm[i] > 0]
-        if known:
-            text5(buf, str(round(sum(known) / len(known))), 90, 26)
+        if avg > 0:
+            text5(buf, str(round(avg)), 90, 26)
         else:
             text3(buf, '--', 90, 29)
         text3(buf, 'BPM', 90, 36)
@@ -400,7 +415,7 @@ def render(m, buf):
                 dashed_ring(buf, x, y, 4)
             if e < 0.5:
                 text3(buf, NAMES[i], x - 3, 2)
-                b = str(round(m.bpm[i])) if m.present[i] and m.finger[i] and m.bpm[i] > 0 else '--'
+                b = str(round(bpms[i])) if m.present[i] and m.finger[i] and bpms[i] > 0 else '--'
                 text3(buf, b, x - (len(b) * 4 - 1) // 2, 44)
         acc = {}
         for mp in maps:
@@ -644,6 +659,16 @@ def selftest():
         assert (buf != ref) == visible, f'banner visible={buf != ref} at t={t}'
         if visible:
             shown_frame = ascii_frame(buf)
+    ref = bytearray(len(buf))
+    h = Model()  # the merged avg shows the browser's figure, and our own (none here: '--') once it goes stale
+    h.merge, h.t = 1.0, 20.0
+    render(h, buf); blank = bytes(buf)
+    h.handle(('h', 72.4, [72, 73, 0, 0]), 20.0); render(h, buf); shown72 = bytes(buf)
+    h.handle(('h', 73.0, [72, 74, 0, 0]), 20.0); render(h, buf)
+    assert shown72 != blank and bytes(buf) != shown72, 'avg readout does not follow h messages'
+    z = Model(); z.merge = 1.0
+    h.t = z.t = 20.0 + HEART_STALE + 0.1; render(h, buf); render(z, ref)
+    assert buf == ref, 'stale avg still shown'
     print(f"{frames} frames, {changed} changed, {notes} notes, peak env {peak:.1f}, merge reached, {spent / frames * 1000:.2f} ms/frame")
     print('--- unmerged (frame 100) ---\n' + unmerged + '\n--- merged ---\n' + merged + '\n--- kit banner ---\n' + shown_frame)
 

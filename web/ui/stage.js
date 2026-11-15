@@ -107,7 +107,7 @@ function loop(now) {
   if (!W || !H) return;
   const live = frame && now - frameAt < STALE_MS, reduced = rm.matches;
   const down = P.map((p, i) => !!(live && frame.ch?.[i]?.finger));
-  const ready = down.map((d, i) => d && !!frame.ch[i].stable && frame.ch[i].bpm > 0); // stable: the BPM has finished calibrating
+  const ready = down.map((d, i) => d && frame.ch[i].bpm > 0); // shown as soon as there is a BPM (core.js), same as the OLED
   P.forEach((p, i) => {
     if (!live) reset(p);
     p.pres += (+down[i] - p.pres) * (1 - Math.exp(-dt / PRES_TAU));
@@ -129,7 +129,7 @@ function loop(now) {
     UB.set([x * dpr, (H - cy) * dpr, Rr * sc * dpr], i * 3);
     US.set([reduced ? 0 : Math.max(f.F, 0), reduced ? 0 : Math.max(f.L, 0), reduced ? 0 : f.rip, p.pres], i * 4); ULf[i] = reduced ? f.lift : 0; UFl[i] = reduced ? 0 : f.fl;
     const e = els[i], tx = lerp(cx, bx + TXO, m), sh = `translate(${-50 * (1 - m)}%, -50%)`;
-    const ghost = down[i] && !ready[i]; // finger on, BPM still calibrating: a shimmering placeholder, no number (style.css .ghost)
+    const ghost = down[i] && !ready[i]; // finger on, no BPM yet: a shimmering placeholder, no number (style.css .ghost)
     put(e.bpm, 'textContent', ready[i] ? Math.round(frame.ch[i].bpm) : ghost ? '00' : '--');
     e.bpm.classList.toggle('off', !down[i]);
     e.bpm.classList.toggle('ghost', ghost);

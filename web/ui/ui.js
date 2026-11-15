@@ -87,22 +87,23 @@ document.addEventListener('mousemove', wake);
 
 // screen readers: plain list refreshed once a second from the latest frame (not aria-live)
 let last = null, lastAt = 0;
-on('frame', (f) => { last = f; lastAt = performance.now(); });
+on('frame', (f) => {
+  last = f; lastAt = performance.now();
+  const a = f.avg > 0 ? String(f.avg) : '--'; // the same figure the OLED shows (core.js)
+  if ($('avgbpm').textContent !== a) $('avgbpm').textContent = a;
+});
 const sr = $('sr');
 sr.replaceChildren(...VOICES.map(() => document.createElement('li')));
 setInterval(() => {
   const live = last && performance.now() - lastAt < 500;
   VOICES.forEach((v, i) => {
     const ch = live ? last.ch?.[i] : null, bpm = Math.round(ch?.bpm);
-    sr.children[i].textContent = ch?.finger ? `${v}: finger on, ${ch.stable && bpm > 0 ? bpm + ' BPM' : 'finding pulse'}` : `${v}: no finger`;
+    sr.children[i].textContent = ch?.finger ? `${v}: finger on, ${bpm > 0 ? bpm + ' BPM' : 'finding pulse'}` : `${v}: no finger`;
   });
 }, 1000);
 
-// Song tempo and the average heart rate that sets it (audio/tempo.js). No hearts: the song runs at the kit's own tempo.
-on('tempo', ({ song, heart }) => {
-  $('songbpm').textContent = Math.round(song);
-  $('avgbpm').textContent = heart > 0 ? Math.round(heart) : '--';
-});
+// Song tempo (audio/tempo.js). No hearts: the song runs at the kit's own tempo.
+on('tempo', ({ song }) => { $('songbpm').textContent = Math.round(song); });
 
 // Diagnostics (?perf): is the sound breaking up because this thread stalls? Late steps and long stalls say yes;
 // if both stay at 0 while the sound breaks up, the cause is outside the page (CPU or the audio device).

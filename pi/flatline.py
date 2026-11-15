@@ -6,7 +6,8 @@ CSV: `ir0,ir1,ir2,ir3` at 50 Hz. A missing sensor reads 0. This is the same
 format the old Arduino sketch sent, so the web app doesn't change.
 A push button between GPIO26 (pin 37) and any GND sends a line `b` on each press:
 the web app steps to the next genre. The web app writes `k,<kit name>` back whenever
-the kit changes, and the OLED shows that name in a banner.
+the kit changes, and the OLED shows that name in a banner. It also writes `h,<avg>,<bpm0..3>`
+on each change and every second, and the OLED shows those numbers so both readouts agree.
 
 Usage: flatline.py [OUT]   OUT defaults to /dev/ttyGS0 (USB gadget serial);
                              pass - to print to stdout for testing over ssh.
@@ -291,9 +292,16 @@ def main():
         if q:
             try:
                 q.put_nowait(vals)
-                for line in out.read_lines():  # browser lines: n,voice,drum,velocity  or  k,<kit name>
+                for line in out.read_lines():  # browser lines: n,voice,drum,velocity  k,<kit name>  h,avg,bpm0,bpm1,bpm2,bpm3
                     if line.startswith('k,'):
                         q.put_nowait(('k', line[2:].strip()[:40]))
+                    elif line.startswith('h,'):
+                        try:
+                            avg, *bpms = map(float, line[2:].split(','))
+                            if len(bpms) == 4:
+                                q.put_nowait(('h', avg, bpms))
+                        except ValueError:
+                            pass  # bad line: skip
                     elif line.startswith('n,'):
                         try:
                             _, v, drum, vel = line.split(',')
