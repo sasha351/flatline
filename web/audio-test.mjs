@@ -14,15 +14,16 @@ const names = ['French house', 'UK garage', 'Ambient', 'Russian hardbass'];
 
 test('genre names, tempo ranges, defaults, phrase lengths, and swing', () => {
   assert.deepEqual(Object.keys(GENRES), names);
-  for (const [name, lo, hi, def, bars] of [
-    ['French house', 120, 126, 123, 4],
-    ['UK garage', 130, 136, 133, 4],
-    ['Ambient', 60, 90, 72, 8],
-    ['Russian hardbass', 150, 160, 155, 4],
+  assert.equal(songBpm(70), 140);
+  assert.equal(songBpm(70.5), 141);
+  assert.equal(songBpm(10), 60);
+  assert.equal(songBpm(300), 220);
+  for (const [name, def, bars] of [
+    ['French house', 123, 4],
+    ['UK garage', 133, 4],
+    ['Ambient', 72, 8],
+    ['Russian hardbass', 155, 4],
   ]) {
-    assert.equal(songBpm(30, name), lo);
-    assert.equal(songBpm(80, name), (lo + hi) / 2);
-    assert.equal(songBpm(150, name), hi);
     assert.equal(createTempo(name)(HEART_OFF), def);
     assert.equal(GENRES[name].phraseBars, bars);
   }
@@ -85,10 +86,10 @@ test('genre tempo follower locks, ignores jitter, follows movement, and releases
   const heart = (on, settled, hr) => ({ on, settled, hr });
   assert.equal(tempo(HEART_OFF), 72);
   assert.equal(tempo(heart(true, false, 72)), 72);
-  assert.equal(tempo(heart(true, true, 72)), songBpm(72, 'Ambient'));
-  assert.equal(tempo(heart(true, true, 72.5)), songBpm(72, 'Ambient'));
-  assert.equal(tempo(heart(true, true, 73)), songBpm(72, 'Ambient'));
-  assert.equal(tempo(heart(true, true, 78)), songBpm(78, 'Ambient'));
+  assert.equal(tempo(heart(true, true, 72)), songBpm(72));
+  assert.equal(tempo(heart(true, true, 72.2)), songBpm(72));
+  assert.equal(tempo(heart(true, true, 72.5)), songBpm(72.5));
+  assert.equal(tempo(heart(true, true, 78)), songBpm(78));
   assert.equal(tempo(HEART_OFF), 72);
 });
 
@@ -316,7 +317,7 @@ test('live kit controls smooth real nodes and remain neutral before heart settle
   kit.update(settledHearts, 11, 1);
   const garage = env.KITS['UK garage'](new Node());
   garage.update(settledHearts, 11, 1);
-  assert.ok(automation.some((a) => a.method === 'target' && a.node?.options?.modulation?.type === 'square' && a.constant === 0.1 && a.value >= 1 && a.value <= 4), 'FM modulation is smoothed (rubber layer)');
+  assert.ok(automation.some((a) => a.method === 'target' && a.node?.options?.modulation?.type === 'square' && a.constant === 0.1 && a.value >= 0.5 && a.value <= 6), 'FM modulation is smoothed (rubber layer)');
   const mono = env.KITS['French house'](new Node());
   mono.update(settledHearts, 11, 1);
   assert.ok(automation.some((a) => a.method === 'target' && a.node?.options?.filter != null && a.constant === 0.1), 'MonoSynth filter is smoothed');
@@ -406,7 +407,7 @@ test('audio lifecycle schedules the selected genre through one persistent repeat
   assert.equal(created[1].events.slice(secondStart).some(({ voice }) => voice === 'drums'), false,
     'lifted voices do not trigger new notes');
   repeats[0](0);
-  assert.ok(ramps.some(({ value }) => value === songBpm(75, 'Russian hardbass')));
+  assert.ok(ramps.some(({ value }) => value === songBpm(75)));
   assert.ok(drawn.every(({ time }) => Number.isFinite(time)));
   assert.ok(emitted.some(([type]) => type === 'kits'));
 });
@@ -488,7 +489,7 @@ test('audio repeat uses live tempo for duration and garage swing timing', () => 
   audio.handlers.frame(fingerFrame);
   audio.repeats[0](0);
   const first = audio.created[0].events.find(({ voice }) => voice === 'bass');
-  assert.equal(first.p.duration, 60 / songBpm(75, 'French house') / 4 * 1);
+  assert.equal(first.p.duration, 60 / songBpm(75) / 4 * 1);
 
   audio.handlers.kit('UK garage');
   for (let i = 0; i < 16; i++) audio.repeats[0](0.125 + i * 0.125);
@@ -796,4 +797,23 @@ test('French house lead stays in register without 7th leaps', () => {
     });
   }
   assert.ok(n > 0 && big / n < 0.1, `big leaps ${big}/${n}`);
+});
+
+test('fast drum heart fills in 16th hats, calm one drops the open hat', () => {
+  const run = (hr) => {
+    const engine = createEvolution('French house');
+    const h = { on: true, settled: true, hr, press: 0.5, breath: 0 };
+    const hearts = VOICES.map((v) => (v === 'drums' ? h : HEART_OFF));
+    let hats = 0, open = 0;
+    for (let i = 0; i < 64; i++) {
+      for (const e of engine.next({ raws: VOICES.map(() => 12345), hearts })) {
+        if (e.params.drum === 'hat') hats++;
+        if (e.params.drum === 'openhat') open++;
+      }
+    }
+    return { hats, open };
+  };
+  assert.ok(run(95).hats > run(78).hats, 'hot adds hats');
+  assert.equal(run(65).open, 0, 'calm drops open hat');
+  assert.ok(run(78).open > 0, 'neutral keeps open hat');
 });

@@ -107,8 +107,12 @@ export function createEvolution(genreName) {
         if (!heart?.on) return;
         const variant = genre.patterns[voice][selected[voice]];
         if (voice === 'drums') {
+          // Energy follows the drum finger's heart: a fast pulse fills in 16th hats, a calm one drops the open hat.
+          // ponytail: thresholds are guesses (hr 72..86 is neutral); tune by ear.
+          const hot = heart.settled && heart.hr > 86, calm = heart.settled && heart.hr < 72;
           Object.entries(variant).forEach(([drum, grid]) => {
-            const hit = grid[position];
+            if (calm && drum === 'openhat') return;
+            const hit = grid[position] || (hot && drum === 'hat' && 0.4);
             if (hit) events.push(voiceEvent(voice, drum, stepSeconds, offset, heart, key, chord, hit));
           });
         } else if (variant[position]) {

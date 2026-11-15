@@ -7,8 +7,8 @@ import * as Tone from 'https://cdn.jsdelivr.net/npm/tone@15.0.4/+esm';
 const midi = (m) => Tone.Frequency(m, 'midi').toNote();
 const gain = (add, db = 0) => add(new Tone.Gain(Tone.dbToGain(db)));
 
-// Heart rate drives timbre: clamp to 55..110, then map linearly or exponentially.
-const hr01 = (hr) => (Math.min(110, Math.max(55, hr)) - 55) / 55;
+// Heart rate drives timbre: clamp to 65..95, then map linearly or exponentially.
+const hr01 = (hr) => (Math.min(95, Math.max(65, hr)) - 65) / 30;
 const hrLin = (hr, lo, hi) => lo + (hi - lo) * hr01(hr);
 const hrExp = (hr, lo, hi) => lo * (hi / lo) ** hr01(hr);
 
@@ -216,7 +216,7 @@ function bass(ctx, o) {
       portamento: glide, envelope: env, volume: -10,
     }));
     layers.push(fm);
-    setTone = (hr, t) => fm.modulationIndex.setTargetAtTime(hrLin(hr, 1, 4), t, 0.1);
+    setTone = (hr, t) => fm.modulationIndex.setTargetAtTime(hrLin(hr, 0.5, 6), t, 0.1);
   } else if (o.type === 'soft') {
     syn = add(new Tone.Synth({
       oscillator: { type: o.osc ?? 'triangle' }, portamento: glide,

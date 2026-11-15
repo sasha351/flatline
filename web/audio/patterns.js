@@ -16,7 +16,7 @@ const DORIAN = [0, 2, 3, 5, 7, 9, 10], MINOR = [0, 2, 3, 5, 7, 8, 10], HARMONIC_
 export const GENRES = {
   'French house': {
     key: { root: 43, scale: DORIAN, chords: [[0, 2, 4, 6], [3, 5, 7, 9], [0, 2, 4, 6], [6, 8, 10, 12]] },
-    tempo: { min: 120, max: 126, default: 123 },
+    tempo: { default: 123 },
     phraseBars: 4,
     swing: 0,
     patterns: {
@@ -44,7 +44,7 @@ export const GENRES = {
   },
   'UK garage': {
     key: { root: 41, scale: MINOR, chords: [[0, 2, 4, 6, 8], [5, 7, 9, 11], [3, 5, 7, 9, 11], [4, 6, 8, 10]] },
-    tempo: { min: 130, max: 136, default: 133 },
+    tempo: { default: 133 },
     phraseBars: 4,
     swing: 0.30,
     patterns: {
@@ -72,7 +72,7 @@ export const GENRES = {
   },
   Ambient: {
     key: { root: ROOT, scale: SCALE, chords: null },
-    tempo: { min: 60, max: 90, default: 72 },
+    tempo: { default: 72 },
     phraseBars: 8,
     swing: 0,
     patterns: {
@@ -100,7 +100,7 @@ export const GENRES = {
   },
   'Russian hardbass': {
     key: { root: 45, scale: HARMONIC_MINOR, chords: [[0, 2, 4], [5, 7, 9], [3, 5, 7], [4, 6, 8]] },
-    tempo: { min: 150, max: 160, default: 155 },
+    tempo: { default: 155 },
     phraseBars: 4,
     swing: 0,
     patterns: {
