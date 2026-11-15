@@ -474,4 +474,32 @@ export const GENRES = {
       ],
     },
   },
+  'Phonk': { // drift phonk: an 808 cowbell plays the riff over 808 kick, clap on 2 and 4, and a distorted 808
+    key: { root: 41, scale: PHRYGIAN, chords: [[0, 2, 4], [0, 2, 4], [1, 3, 5], [0, 2, 4]] },
+    tempo: { default: 140 },
+    phraseBars: 4,
+    swing: 0,
+    patterns: {
+      drums: [
+        { kick: drum('x.....x...x.....'), clap: drum('....x.......x...'), hat: drum('x.x.x.x.x.x.x.x.'), hatroll: drum('................'), openhat: drum('................') },
+        { kick: drum('x..x......x..x..'), clap: drum('....x.......x...'), hat: drum('x.x.x.x.x.x.x...'), hatroll: drum('..............xx'), openhat: drum('................') },
+        { kick: drum('x.....x.x.x.....'), clap: drum('....x.......x..x'), hat: drum('xgxgxgxgxgxgxgxg'), hatroll: drum('................'), openhat: drum('..........x.....') },
+      ],
+      bass: [ // overlapping 808 notes glide into each other
+        line('x.....x...x.....', [note(0, -1, 6), note(0, -1, 4), note(1, -1, 6)]),
+        line('x..x......x..x..', [note(0, -1, 3), note(0, 0, 6), note(0, -1, 3), note(4, -1, 3)]),
+        line('x.....x.x.x.....', [note(0, -1, 6), note(1, -1, 2), note(0, -1, 2), note(0, -1, 6)]),
+      ],
+      lead: [ // the cowbell riff: busy, repeating, mostly on the root and the flat 2nd
+        lead('x..x..x.x..x..x.', 2, 0, 0, 1, 0, 4, 3),
+        lead('x.xx.xx.x.xx.x.x', 2, 0, 1, 0, 0, 4, 3, 1, 0),
+        lead('x..x..x...x.x.x.', 2, 4, 3, 1, 0, 1, 0),
+      ],
+      pad: [ // Memphis vocal chops
+        line('x.......x.......', [stab(2, 0.55)]),
+        line('x...x.......x.x.', [stab(1, 0.55)]),
+        line('....x.......xx..', [stab(2, 0.5)]),
+      ],
+    },
+  },
 };

@@ -154,6 +154,8 @@ Picked for how they fit the tempo rule (song = 2 x heart rate, about 130-190 BPM
 | Jersey club | 140, natural | bouncy five-kick bar, vocal chops from sensor 4 |
 | Hard groove | 140, natural | four-on-the-floor under rolling toms, rims and shuffled hats (Sam asked for it) |
 
+**Phonk** (Sam, 2026-11-15, "at least one instrument has to be cowbell"): drift phonk at 140; the **lead is a melodic 808 cowbell** (new lead type `cowbell`: two squares at 1 : 1.48, short decay, driven), over an 808 kick, clap on 2 and 4, a distorted gliding 808 bass and vocal chops on sensor 4.
+
 Footwork and Jersey club kicks are really triplets; the grid has only 16ths, so their patterns are close stand-ins. Left out: Jungle and Trance (too close to Drum and bass and Psytrance), and disco, synthwave, afrobeats, amapiano (too slow for 2 x heart rate, too fast at half-time).
 
 **Engine additions:** `hatroll` drum lane (two closed hats in one 16th, `evolution.js`); `wobble` bass option (filter cycles per note, locked to the note length); `env` bass option (hardstyle's reverse envelope); `vox` pad type (chopped vocal stabs, `maxLen`).

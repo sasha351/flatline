@@ -10,7 +10,7 @@ import { phraseSeed, note, SCALE, ROOT } from './audio/mapping.js';
 import { createEvolution, snapToChord } from './audio/evolution.js';
 import { rng, makeMotif, develop } from './audio/melody.js';
 
-const names = ['French house', 'UK garage', 'Ambient', 'Russian hardbass', 'Drum and bass', 'Acid techno', 'Lo-fi', 'Boom bap', 'Psytrance', 'Trap', 'Dubstep', 'Hardstyle', 'Reggaeton', 'Footwork', 'Jersey club', 'Hard groove'];
+const names = ['French house', 'UK garage', 'Ambient', 'Russian hardbass', 'Drum and bass', 'Acid techno', 'Lo-fi', 'Boom bap', 'Psytrance', 'Trap', 'Dubstep', 'Hardstyle', 'Reggaeton', 'Footwork', 'Jersey club', 'Hard groove', 'Phonk'];
 
 test('genre names, tempo ranges, defaults, phrase lengths, and swing', () => {
   assert.deepEqual(Object.keys(GENRES), names);
@@ -35,6 +35,7 @@ test('genre names, tempo ranges, defaults, phrase lengths, and swing', () => {
     ['Footwork', 160, 4],
     ['Jersey club', 140, 4],
     ['Hard groove', 140, 4],
+    ['Phonk', 140, 4],
   ]) {
     assert.deepEqual(createTempo(name)([HEART_OFF, HEART_OFF, HEART_OFF, HEART_OFF], 0.1), { song: def, heart: 0 });
     assert.equal(GENRES[name].phraseBars, bars);
@@ -221,7 +222,7 @@ test('kit boundaries expose four bounded, disposable, duration-aware kits', () =
   }});
   const env = { Tone, GENRES: {} };
   runInNewContext(source, env);
-  const names = ['French house', 'UK garage', 'Ambient', 'Russian hardbass', 'Drum and bass', 'Acid techno', 'Lo-fi', 'Boom bap', 'Psytrance', 'Trap', 'Dubstep', 'Hardstyle', 'Reggaeton', 'Footwork', 'Jersey club', 'Hard groove'];
+  const names = ['French house', 'UK garage', 'Ambient', 'Russian hardbass', 'Drum and bass', 'Acid techno', 'Lo-fi', 'Boom bap', 'Psytrance', 'Trap', 'Dubstep', 'Hardstyle', 'Reggaeton', 'Footwork', 'Jersey club', 'Hard groove', 'Phonk'];
   assert.deepEqual(Object.keys(env.KITS), names);
   const hearts = {
     drums: { hr: 75, press: 0.5, breath: 0 },
@@ -263,6 +264,12 @@ test('kit boundaries expose four bounded, disposable, duration-aware kits', () =
       assert.ok((up(one) && down(two)) || (down(one) && up(two)), 'scratches alternate: a push (up and back), then a pull (down and back)');
       kit.pad({ notes: [52, 55, 59], duration: 2, velocity: 0.6 }, hearts.pad, 11);
       assert.ok(sweepsAt(11, 2).every((x) => x.time <= 11.35 + 1e-9), 'a long cell still scratches fast');
+    }
+    if (name === 'Phonk') { // the cowbell: two squares at the 808's 800/540 ratio, struck together
+      kit.lead({ notes: [69], duration: 0.2, velocity: 0.7 }, hearts.lead, 30);
+      const hz = triggers.filter(({ args }) => args[2] === 30).map(({ args }) => args[0]).sort((a, b) => a - b);
+      assert.equal(hz.length, 2, 'two oscillators');
+      assert.ok(hz[0] === 440 && Math.abs(hz[1] / hz[0] - 800 / 540) < 1e-9, `cowbell pitches ${hz}`);
     }
     if (name === 'Dubstep') { // the wobble: the bass filter opens and closes inside one note
       kit.bass({ notes: [41], duration: 1, velocity: 0.8 }, hearts.bass, 20);
@@ -769,7 +776,7 @@ test('motif with n = 7 resolves to root, 5th or octave root', () => {
   assert.ok([0, 4, 7].includes(d[d.findLastIndex((x) => x !== null)]));
 });
 
-for (const name of ['French house', 'UK garage', 'Russian hardbass', 'Drum and bass', 'Acid techno', 'Lo-fi', 'Boom bap', 'Psytrance', 'Trap', 'Dubstep', 'Hardstyle', 'Reggaeton', 'Footwork', 'Jersey club', 'Hard groove']) {
+for (const name of ['French house', 'UK garage', 'Russian hardbass', 'Drum and bass', 'Acid techno', 'Lo-fi', 'Boom bap', 'Psytrance', 'Trap', 'Dubstep', 'Hardstyle', 'Reggaeton', 'Footwork', 'Jersey club', 'Hard groove', 'Phonk']) {
   test(`${name}: notes in key, lead strong beats on chord tones`, () => {
     const { key } = GENRES[name];
     const steps = runSteps(name, 16 * GENRES[name].phraseBars * 2);

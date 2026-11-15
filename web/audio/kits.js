@@ -281,6 +281,13 @@ Object.assign(DRUMS, {
     rim: { note: 'A4', volume: -10 },
     tom: { note: 'C3', volume: -8 },
   },
+  phonk: { // long 808 kick, hard clap, crisp hats
+    level: -6, verb: -16,
+    kick: { note: 'F1', pitchDecay: 0.07, octaves: 4, decay: 0.8, click: -10, drive: 0.6 },
+    snare: { body: 'D3', bodyDecay: 0.1, noise: 'white', hp: 1500, lp: 9000, decay: 0.18, volume: -6 },
+    clap: { freq: 1200, volume: -4 },
+    hat: { kind: 'noise', closed: 0.02, open: 0.25, hp: 9000, volume: -16 },
+  },
   club: { // punchy kick and a loud clap
     level: -6, verb: -16,
     kick: { note: 'G1', pitchDecay: 0.03, octaves: 4, decay: 0.3, click: -8, drive: 0.4 },
@@ -401,6 +408,8 @@ const BASS = {
 // type 'supersaw': 7-voice fat saw plus an octave-up copy (-8 dB), lightly distorted.
 // type 'pluck':    PluckSynth. Ignores velocity.
 // type 'keys':     piano-like: a few partials with a hard attack that rings down.
+// type 'cowbell':  phonk's melodic 808 cowbell: two square waves at the 808's 1 : 1.48 ratio, a short
+//                  ringing decay, high-passed and driven. The note sets the lower square's pitch.
 // Optional `delay` {time, feedback, send (dB), pingpong}.
 // Heart: heart rate sets a low-pass, 400..4000 Hz (exponential).
 // Note length is p.duration (the note's gate in seconds, cell.gate * stepSeconds from evolution.js) when given, else o.dur.
@@ -420,7 +429,7 @@ function lead(ctx, o) {
   }
   const lp = add(new Tone.Filter({ type: 'lowpass', frequency: 2000, Q: 1 })).connect(bus);
   let head = lp;
-  let syn, up, formants, vowel;
+  let syn, up, formants, vowel, bell = null; // bell: the cowbell's upper square
   const formantPair = (s) => {
     const bp = (f) => add(new Tone.Filter({ type: 'bandpass', frequency: f, Q: 6 })).connect(head);
     const pair = [bp(800), bp(1150)];
@@ -453,6 +462,13 @@ function lead(ctx, o) {
     syn = saw(0); up = saw(-8);
     const drive = add(new Tone.Distortion({ distortion: 0.3, wet: 0.6 })).connect(head);
     syn.connect(drive); up.connect(drive);
+  } else if (o.type === 'cowbell') {
+    const env = { attack: 0.001, decay: o.decay ?? 0.22, sustain: 0, release: 0.05 };
+    const drive = add(new Tone.WaveShaper((x) => Math.tanh(3 * x) / Math.tanh(3), 1024)).connect(head);
+    const hp = add(new Tone.Filter({ type: 'highpass', frequency: 350 })).connect(drive);
+    syn = add(new Tone.Synth({ oscillator: { type: 'square' }, envelope: env }));
+    bell = add(new Tone.Synth({ oscillator: { type: 'square' }, envelope: env, volume: -2 }));
+    syn.connect(hp); bell.connect(hp);
   } else if (o.type === 'keys') {
     syn = add(new Tone.Synth({
       oscillator: { type: 'custom', partials: [1, 0.5, 0.25, 0.12, 0.06] },
@@ -461,7 +477,7 @@ function lead(ctx, o) {
   } else {
     syn = add(new Tone.PluckSynth({ attackNoise: 1.5, dampening: 4000, resonance: 0.97, release: 1.5 }));
   }
-  if (!formants && !up) syn.connect(head);
+  if (!formants && !up && !bell) syn.connect(head);
   const dur = o.dur ?? '8n';
   return {
     play(p, heart, t) {
@@ -472,7 +488,11 @@ function lead(ctx, o) {
         if (o.type === 'chop') { formants[0].frequency.setValueAtTime(a, t); formants[1].frequency.setValueAtTime(b, t); }
         else { formants[0].frequency.setTargetAtTime(a, t, 0.04); formants[1].frequency.setTargetAtTime(b, t, 0.04); }
       }
-      syn.triggerAttackRelease(midi(p.notes[0]), p.duration ?? dur, t, p.velocity);
+      if (bell) { // in Hz, so the second square sits at the cowbell ratio rather than on a note
+        const hz = 440 * 2 ** ((p.notes[0] - 69) / 12);
+        syn.triggerAttackRelease(hz, p.duration ?? dur, t, p.velocity);
+        bell.triggerAttackRelease(hz * COWBELL, p.duration ?? dur, t, p.velocity);
+      } else syn.triggerAttackRelease(midi(p.notes[0]), p.duration ?? dur, t, p.velocity);
       if (up) up.triggerAttackRelease(midi(p.notes[0] + 12), p.duration ?? dur, t, p.velocity);
       if (o.type === 'chop') { // vocal scoop: start ~2 semitones sharp, settle in 40 ms (after trigger's own set)
         const hz = Tone.Frequency(p.notes[0], 'midi').toFrequency();
@@ -485,9 +505,10 @@ function lead(ctx, o) {
       lp.frequency.setTargetAtTime(brightness, t, 0.1);
       if (echoSend) echoSend.gain.setTargetAtTime(Math.min(1, Math.max(0, (o.echoBase ?? 0.2) + 0.15 * (heart.breath ?? 0))), t, 0.1);
     },
-    silence() { syn.triggerRelease(); up?.triggerRelease(); },
+    silence() { syn.triggerRelease(); up?.triggerRelease(); bell?.triggerRelease(); },
   };
 }
+const COWBELL = 800 / 540; // the TR-808 cowbell's two oscillators
 
 const LEAD = {
   talkbox: { type: 'talkbox', glide: 0.05, delay: { pingpong: true, time: '8n.', feedback: 0.25, send: -12 }, verb: -12, level: -6 },
@@ -499,6 +520,7 @@ const LEAD = {
     verb: -4, level: -4, // transient: peaks ~6 dB over its RMS
   },
   keys: { type: 'keys', dur: '8n', verb: -12, level: -8 },
+  cowbell: { type: 'cowbell', verb: -14, level: -13 },
 };
 
 // ---------------------------------------------------------------- pad
@@ -860,5 +882,16 @@ export const KITS = {
     bass: { ...BASS.pluck, level: -9, filterLo: 300, filterHi: 1100 },
     lead: { ...LEAD.keys, delay: { time: '8n.', feedback: 0.3, send: -12 }, level: -10, brightLo: 900, brightHi: 4000, echoBase: 0.12 },
     pad: { ...PAD.organ, level: -12, filterLo: 700, filterHi: 4000 },
+  }),
+  // Drift phonk: 808 kick and hard clap, distorted gliding 808 bass, the cowbell riff as the lead,
+  // dark Memphis-style vocal chops from the fourth finger.
+  'Phonk': makeKit({
+    tail: 3,
+    pump: 0.8,
+    reverb: { decay: 1.8, preDelay: 0.01, wet: 0.45 },
+    drums: { ...DRUMS.phonk, brightness: 10500 },
+    bass: { ...BASS[808], grit: 2.5 },
+    lead: { ...LEAD.cowbell, brightLo: 2500, brightHi: 7000 },
+    pad: { ...PAD.vox, maxLen: 0.18, filterLo: 1200, filterHi: 3000 },
   }),
 };
