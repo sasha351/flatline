@@ -130,6 +130,8 @@ Pick a kit and let the hearts do the rest:
 - **Rock**: straight rock beat, picked eighth-note bass, distorted lead guitar, power-chord rhythm guitar (all synthesised, so a rock band as a synth would play it)
 - **Drill**: half-time and dark: skippy hats and rolls, late snares, 808s that slide between octaves, piano and strings
 - **R&B**: half-time and swung: soft kick and finger snaps, round bass, talkbox lead, electric-piano chords
+- **Punk**: fast and loud: the oom-pah punk beat, eighth-note bass, a simple distorted hook, downpicked power chords
+- **Metal**: double-kick 16ths, bass locked to the kick, a heavily driven riff in E Phrygian, palm-muted chugs (synthesised, like Rock)
 - **Footwork** and **Jersey club**: fast, skittering or bouncy kick patterns with vocal chops from the fourth sensor. Their kicks are really triplets; the grid only has 16th notes, so these are close stand-ins
 
 To add a kit, add a genre to `web/audio/patterns.js` and a kit of the same name to `web/audio/kits.js`; both files say how at the end of their tables.

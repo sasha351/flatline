@@ -645,4 +645,60 @@ export const GENRES = {
       ],
     },
   },
+  'Punk': { // fast and loud: the oom-pah punk beat (kick on the beat, snare on the offbeat), downpicked power chords
+    key: { root: 40, scale: MAJOR, chords: [[0, 4], [3, 7], [4, 8], [0, 4]] }, // I IV V I, as power chords
+    tempo: { default: 180 },
+    phraseBars: 4,
+    swing: 0,
+    patterns: {
+      drums: [
+        { kick: drum('x...x...x...x...'), snare: drum('..x...x...x...x.'), hat: drum('x.x.x.x.x.x.x.x.'), openhat: drum('................') },
+        { kick: drum('x.......x.x.....'), snare: drum('....x.......x...'), hat: drum('x.x.x.x.x.x.x.x.'), openhat: drum('................') },
+        { kick: drum('x...x...x...x...'), snare: drum('..x...x...x.xxxx'), hat: drum('x.x.x.x.x.x.....'), openhat: drum('x...............') },
+      ],
+      bass: [
+        line('x.x.x.x.x.x.x.x.', [note(0, -1)]),
+        line('x.x.x.x.x.x.x.x.', [note(0, -1), note(0, -1), note(0, -1), note(0, -1), note(0, -1), note(0, -1), note(2, -1), note(4, -1)]),
+        line('xxxxxxxxx.x.x.x.', [note(0, -1)]),
+      ],
+      lead: [ // simple hook
+        lead('x...x...x.x.x...', 1, 4, 2, 0, 2, 4),
+        lead('x.x.x.x.x...x...', 1, 0, 2, 4, 2, 0, 4),
+        lead('x.......x...x.x.', 1, 4, 5, 4, 2),
+      ],
+      pad: [ // downpicked power-chord eighths
+        line('x.x.x.x.x.x.x.x.', [stab(1, 0.6)]),
+        line('xxxxxxxxxxxxxxxx', [stab(1, 0.5)]),
+        line('x.x.x.x.x.....x.', [stab(1, 0.6), stab(1, 0.6), stab(1, 0.6), stab(1, 0.6), stab(4, 0.6), stab(1, 0.6)]),
+      ],
+    },
+  },
+  'Metal': { // double-kick 16ths, palm-muted chugs, a heavily driven riff in E Phrygian
+    key: { root: 40, scale: PHRYGIAN, chords: [[0, 4], [0, 4], [1, 5], [3, 7]] }, // power chords, with the dark flat 2nd
+    tempo: { default: 170 },
+    phraseBars: 4,
+    swing: 0,
+    patterns: {
+      drums: [
+        { kick: drum('xxxxxxxxxxxxxxxx'), snare: drum('....x.......x...'), hat: drum('x.x.x.x.x.x.x.x.'), openhat: drum('................') },
+        { kick: drum('x.xxx.xxx.xxx.xx'), snare: drum('....x.......x...'), hat: drum('x...x...x...x...'), openhat: drum('..............x.') },
+        { kick: drum('x.x.x.x.x.x.x.x.'), snare: drum('..x...x...x...x.'), hat: drum('x...x...x...x...'), openhat: drum('................') },
+      ],
+      bass: [ // locked to the kick
+        line('xxxxxxxxxxxxxxxx', [note(0, -1)]),
+        line('x.xxx.xxx.xxx.xx', [note(0, -1), note(0, -1), note(0, -1), note(1, -1), note(0, -1), note(0, -1), note(0, -1), note(3, -1)]),
+        line('x.x.x.x.x.x.x.x.', [note(0, -1)]),
+      ],
+      lead: [ // riff: root and the flat 2nd
+        lead('x.xx.xx.x.xx.x.x', 1, 0, 0, 1, 0, 0, 3, 1, 0),
+        lead('x..x..x.x..x..x.', 1, 0, 1, 0, 4, 3, 1),
+        lead('xxx.xxx.xxx.x.x.', 1, 0, 1, 2, 1, 0, 1, 3, 1, 0, 1),
+      ],
+      pad: [ // palm-muted chugs, with an open chord to finish
+        line('x.xx.xx.x.xx.x..', [stab(1, 0.55), stab(1, 0.5), stab(1, 0.5), stab(1, 0.5), stab(1, 0.5), stab(1, 0.55), stab(1, 0.5), stab(1, 0.5)]),
+        line('xxxxxxxx....x...', [stab(1, 0.5), stab(1, 0.5), stab(1, 0.5), stab(1, 0.5), stab(1, 0.5), stab(1, 0.5), stab(1, 0.5), stab(1, 0.5), stab(4, 0.6)]),
+        notes([stab(8, 0.6), ...empty().slice(1, 8), stab(8, 0.6), ...empty().slice(9)]),
+      ],
+    },
+  },
 };

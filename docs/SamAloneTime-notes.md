@@ -158,6 +158,8 @@ Picked for how they fit the tempo rule (song = 2 x heart rate, about 130-190 BPM
 
 **Dream pop, Hyperpop, Rock, Drill, R&B** (Sam, 2026-11-15). Hyperpop and Rock run at the natural tempo; Dream pop, Drill and R&B are half-time. Engine additions: `MAJOR` scale (Dream pop, Hyperpop), `guitar` lead type (plucked string through a hard clipper), pad `drive` (Rock's power chords as rhythm guitar), `vox` `octave` (Hyperpop's chipmunk chops), `strings` pad preset. Rock is synthesised: a rock band as a synth would play it, not a real guitar.
 
+**Punk and Metal** (Sam, 2026-11-15): both at the natural tempo. Punk: oom-pah beat, I-IV-V power chords in E major. Metal: double-kick 16ths, E Phrygian chugs; the `guitar` lead gained a `gain` option (Metal uses 14, default 6).
+
 Footwork and Jersey club kicks are really triplets; the grid has only 16ths, so their patterns are close stand-ins. Left out: Jungle and Trance (too close to Drum and bass and Psytrance), and disco, synthwave, afrobeats, amapiano (too slow for 2 x heart rate, too fast at half-time).
 
 **Engine additions:** `hatroll` drum lane (two closed hats in one 16th, `evolution.js`); `wobble` bass option (filter cycles per note, locked to the note length); `env` bass option (hardstyle's reverse envelope); `vox` pad type (chopped vocal stabs, `maxLen`).

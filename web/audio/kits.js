@@ -309,6 +309,20 @@ Object.assign(DRUMS, {
     clap: { freq: 1300, volume: -8 },
     hat: { kind: 'noise', closed: 0.02, open: 0.25, hp: 9000, volume: -16 },
   },
+  punk: { // loud and trashy: snappy kick, cracking snare, washy hats
+    level: -6, verb: -14,
+    kick: { note: 'A1', pitchDecay: 0.03, octaves: 3, decay: 0.28, click: -6, drive: 0.3 },
+    snare: { body: 'E3', bodyDecay: 0.12, noise: 'white', hp: 1000, lp: 10000, decay: 0.2, volume: -2 },
+    clap: { freq: 1200, volume: -10 },
+    hat: { kind: 'metal', closed: 0.06, open: 0.4, hp: 7000, volume: -20 },
+  },
+  metal: { // tight, clicky kick for fast double-kick, ringing snare, bright cymbals
+    level: -6, verb: -14,
+    kick: { note: 'A1', pitchDecay: 0.015, octaves: 3, decay: 0.14, click: -2, drive: 0.4, volume: -6 },
+    snare: { body: 'D3', bodyDecay: 0.16, noise: 'white', hp: 900, lp: 11000, decay: 0.24, volume: -1 },
+    clap: { freq: 1200, volume: -10 },
+    hat: { kind: 'metal', closed: 0.05, open: 0.5, hp: 7500, volume: -20 },
+  },
   rnb: { // soft round kick, a finger-snap rim, quiet hats
     level: -6, verb: -10,
     kick: { note: 'G1', pitchDecay: 0.03, octaves: 3, decay: 0.4, volume: -2 },
@@ -437,7 +451,7 @@ const BASS = {
 // type 'supersaw': 7-voice fat saw plus an octave-up copy (-8 dB), lightly distorted.
 // type 'pluck':    PluckSynth. Ignores velocity.
 // type 'keys':     piano-like: a few partials with a hard attack that rings down.
-// type 'guitar':   distorted electric guitar: a plucked string driven hard through a tanh clipper.
+// type 'guitar':   distorted electric guitar: a plucked string driven hard through a tanh clipper (`gain`, default 6).
 // type 'cowbell':  phonk's melodic 808 cowbell: two square waves at the 808's 1 : 1.48 ratio, a short
 //                  ringing decay, high-passed and driven. The note sets the lower square's pitch.
 // Optional `delay` {time, feedback, send (dB), pingpong}.
@@ -493,7 +507,8 @@ function lead(ctx, o) {
     const drive = add(new Tone.Distortion({ distortion: 0.3, wet: 0.6 })).connect(head);
     syn.connect(drive); up.connect(drive);
   } else if (o.type === 'guitar') {
-    const drive = add(new Tone.WaveShaper((x) => Math.tanh(6 * x) / Math.tanh(6), 1024)).connect(head);
+    const g = o.gain ?? 6;
+    const drive = add(new Tone.WaveShaper((x) => Math.tanh(g * x) / Math.tanh(g), 1024)).connect(head);
     syn = add(new Tone.PluckSynth({ attackNoise: 2, dampening: 3500, resonance: 0.985, release: 1 }));
     syn.connect(drive);
     bell = null; driven = true;
@@ -981,5 +996,23 @@ export const KITS = {
     bass: { ...BASS.soft, filter: 450, glide: 0.06, dur: '4n' },
     lead: { ...LEAD.talkbox, level: 2, brightLo: 900, brightHi: 3500, echoBase: 0.12 },
     pad: { ...PAD.keys, filterLo: 500, filterHi: 2800 },
+  }),
+  // Fast and loud: oom-pah beat on a trashy kit, eighth-note bass, simple distorted hook, downpicked power chords.
+  'Punk': makeKit({
+    tail: 2,
+    reverb: { decay: 1.2, preDelay: 0.01, wet: 0.35 },
+    drums: { ...DRUMS.punk, brightness: 9500 },
+    bass: { ...BASS.pluck, osc: 'sawtooth', level: -9, filterLo: 450, filterHi: 1500, q: 2 },
+    lead: { ...LEAD.guitar, brightLo: 2000, brightHi: 5000 },
+    pad: { ...PAD.powerChords, drive: 0.85, filterLo: 1400, filterHi: 4500 },
+  }),
+  // Double-kick 16ths on a tight clicky kit, bass locked to the kick, a heavily driven riff, palm-muted chugs.
+  'Metal': makeKit({
+    tail: 2,
+    reverb: { decay: 1.5, preDelay: 0.01, wet: 0.35 },
+    drums: { ...DRUMS.metal, brightness: 11000 },
+    bass: { ...BASS.pluck, osc: 'sawtooth', level: -10, dur: '32n', filterLo: 400, filterHi: 1200, q: 2, grit: 1.5 },
+    lead: { ...LEAD.guitar, gain: 14, level: -20, brightLo: 1800, brightHi: 4500 },
+    pad: { ...PAD.powerChords, drive: 1, release: 0.05, level: -15, filterLo: 1100, filterHi: 3500 },
   }),
 };
