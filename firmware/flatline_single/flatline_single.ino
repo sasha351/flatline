@@ -1,4 +1,4 @@
-// trackPrint single-sensor test: one MAX30102 wired straight to the Uno's I2C pins
+// flatline single-sensor test: one MAX30102 wired straight to the Uno's I2C pins
 // (SDA = A4, SCL = A5), no TCA9548A mux. Streams the same CSV as the full firmware,
 // ir0,ir1,ir2,ir3 at 50 Hz, 115200 baud, with the real reading on CHANNEL and 0 on
 // the others (0 = sensor missing). Open the web app with ?fill=sim to simulate those.

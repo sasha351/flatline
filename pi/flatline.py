@@ -1,16 +1,16 @@
 #!/usr/bin/env python3
-"""trackPrint sensor reader for a Raspberry Pi Zero 2 W.
+"""flatline sensor reader for a Raspberry Pi Zero 2 W.
 
 Reads 4x MAX30102 (all fixed at 0x57), one per I2C bus, and streams raw IR as
 CSV: `ir0,ir1,ir2,ir3` at 50 Hz. A missing sensor reads 0. This is the same
 format the old Arduino sketch sent, so the web app doesn't change.
 
-Usage: trackprint.py [OUT]   OUT defaults to /dev/ttyGS0 (USB gadget serial);
+Usage: flatline.py [OUT]   OUT defaults to /dev/ttyGS0 (USB gadget serial);
                              pass - to print to stdout for testing over ssh.
 
 Tuning without a restart (as the service's user, no sudo):
-  echo led=0x3F > ~/trackprint.conf && pkill -HUP -f trackprint.py    # change LED power, kept across restarts
-  pkill -USR1 -f trackprint.py    # write the last 30 s of red and IR, per sensor, to /tmp/trackprint-dump.csv
+  echo led=0x3F > ~/flatline.conf && pkill -HUP -f flatline.py    # change LED power, kept across restarts
+  pkill -USR1 -f flatline.py    # write the last 30 s of red and IR, per sensor, to /tmp/flatline-dump.csv
 """
 import collections
 import multiprocessing
@@ -39,8 +39,8 @@ LED1_PA, LED2_PA, PART_ID = 0x0C, 0x0D, 0xFF
 # Same settings as the old sketch's setup(0x1F, 4, 2, 200, 411, 4096).
 # ponytail: LED power is the calibration knob; raise it if signal is weak, lower it if raw IR saturates near 262143
 LED_POWER = 0x1F
-CONF = os.path.expanduser('~/trackprint.conf')  # optional: a line `led=0x3F` overrides LED_POWER
-DUMP = '/tmp/trackprint-dump.csv'
+CONF = os.path.expanduser('~/flatline.conf')  # optional: a line `led=0x3F` overrides LED_POWER
+DUMP = '/tmp/flatline-dump.csv'
 HIST = 1500           # samples of (red, IR) kept per sensor for the dump: 30 s
 LED_MAX = 0x7F        # cap for the override: 25 mA, half of what the chip allows (0xFF = 51 mA)
 led = LED_POWER       # current LED power; sensor threads apply a change on their next poll

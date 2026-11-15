@@ -1,6 +1,6 @@
-# trackPrint visuals: design direction
+# flatline visuals: design direction
 
-The current mockup is [`2026-11-14-trackprint-ferrofluid-mockups.html`](2026-11-14-trackprint-ferrofluid-mockups.html). The earlier “organic stage” direction is superseded.
+The current mockup is [`2026-11-14-flatline-ferrofluid-mockups.html`](2026-11-14-flatline-ferrofluid-mockups.html). The earlier “organic stage” direction is superseded.
 
 ## Tokens
 

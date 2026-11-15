@@ -1,10 +1,10 @@
-# trackPrint Part 0: Foundation
+# flatline Part 0: Foundation
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Overview, contract, and branching rules:** [`2026-11-14-trackprint.md`](2026-11-14-trackprint.md). Read it first.
+**Overview, contract, and branching rules:** [`2026-11-14-flatline.md`](2026-11-14-flatline.md). Read it first.
 
-> **Hardware changed (2026-11-14):** the Arduino + TCA9548A mux described here was replaced by a Raspberry Pi Zero 2 W reading each sensor on its own I2C bus (`pi/`). The CSV format is unchanged. See the README and the [design spec](../specs/2026-11-13-trackprint-design.md). This plan is kept as written.
+> **Hardware changed (2026-11-14):** the Arduino + TCA9548A mux described here was replaced by a Raspberry Pi Zero 2 W reading each sensor on its own I2C bus (`pi/`). The CSV format is unchanged. See the README and the [design spec](../specs/2026-11-13-flatline-design.md). This plan is kept as written.
 
 **Who:** one person, or both teammates pairing. **Branch:** `foundation` (off `main`), merged to `main` before anyone starts the sound or visuals tracks.
 
@@ -22,7 +22,7 @@ git switch -c foundation
 ### F1: Firmware + wiring docs
 
 **Files:**
-- Create: `firmware/trackprint/trackprint.ino`
+- Create: `firmware/flatline/flatline.ino`
 - Modify: `README.md` (replace contents)
 
 **Interfaces:**
@@ -43,10 +43,10 @@ Expected: each command ends without an error.
 
 - [ ] **Step 2: Write the sketch**
 
-`firmware/trackprint/trackprint.ino`:
+`firmware/flatline/flatline.ino`:
 
 ```cpp
-// trackPrint: read 4x MAX30102 through a TCA9548A mux, stream raw IR as CSV.
+// flatline: read 4x MAX30102 through a TCA9548A mux, stream raw IR as CSV.
 // Line format: ir0,ir1,ir2,ir3  at 50 Hz, 115200 baud. Missing sensor = 0.
 #include <Wire.h>
 #include "MAX30105.h"  // SparkFun MAX3010x library; also drives the MAX30102
@@ -102,8 +102,8 @@ void loop() {
 - [ ] **Step 3: Compile for both boards**
 
 ```bash
-arduino-cli compile -b arduino:avr:uno firmware/trackprint
-arduino-cli compile -b arduino:avr:leonardo firmware/trackprint
+arduino-cli compile -b arduino:avr:uno firmware/flatline
+arduino-cli compile -b arduino:avr:leonardo firmware/flatline
 ```
 
 Expected: both print `Sketch uses ... bytes` and no errors.
@@ -113,7 +113,7 @@ Expected: both print `Sketch uses ... bytes` and no errors.
 `README.md`:
 
 ````markdown
-# trackPrint
+# flatline
 
 Four heart-rate sensors → four-voice electronic band in the browser.
 ch0 drums · ch1 bass · ch2 lead · ch3 pad.
@@ -138,7 +138,7 @@ Keep all I2C pull-ups at 3.3V. If a sensor reads `0`, check its address, its wir
 ```bash
 arduino-cli lib install "SparkFun MAX3010x Pulse and Proximity Sensor Library"
 arduino-cli board list                      # find the port
-arduino-cli upload -b arduino:avr:uno -p <port> firmware/trackprint
+arduino-cli upload -b arduino:avr:uno -p <port> firmware/flatline
 ```
 Check: `arduino-cli monitor -p <port> -c baudrate=115200` shows `ir0,ir1,ir2,ir3` lines; a value jumps above ~50000 with a finger on.
 
@@ -158,7 +158,7 @@ node web/test.mjs
 
 ```bash
 arduino-cli board list
-arduino-cli upload -b arduino:avr:uno -p /dev/cu.usbmodemXXXX firmware/trackprint   # use the port from board list
+arduino-cli upload -b arduino:avr:uno -p /dev/cu.usbmodemXXXX firmware/flatline   # use the port from board list
 arduino-cli monitor -p /dev/cu.usbmodemXXXX -c baudrate=115200
 ```
 
@@ -167,7 +167,7 @@ Expected: 50 lines per second of `n,n,n,n`. A covered sensor reads more than 500
 - [ ] **Step 6: Commit**
 
 ```bash
-git add firmware/trackprint/trackprint.ino README.md docs/superpowers
+git add firmware/flatline/flatline.ino README.md docs/superpowers
 git commit -m "feat: firmware streaming 4 MAX30102 channels as CSV"
 ```
 
@@ -530,9 +530,9 @@ Expected: `serial ok`, `signal ok`, `mapping ok`, then FAIL with `ERR_MODULE_NOT
 `web/bus.js`:
 
 ```js
-// trackPrint shared contract. web/audio and web/ui never import each other;
+// flatline shared contract. web/audio and web/ui never import each other;
 // they only talk through these events. Change this table only through a
-// contract/* branch (see docs/superpowers/plans/2026-11-14-trackprint.md).
+// contract/* branch (see docs/superpowers/plans/2026-11-14-flatline.md).
 //
 // event      from   detail
 // frame      core   { raws: number[4], ch: {finger, ac, beat, bpm}[4] }   ~50 Hz
@@ -753,7 +753,7 @@ emit('analyser', { wave, fft });
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>trackPrint</title>
+  <title>flatline</title>
   <style>
     body { font: 16px system-ui, sans-serif; margin: 2rem; background: #111; color: #eee; }
     button, select { font: inherit; padding: .4rem .8rem; }
@@ -764,7 +764,7 @@ emit('analyser', { wave, fft });
   </style>
 </head>
 <body>
-  <h1>trackPrint</h1>
+  <h1>flatline</h1>
   <button id="connect">Connect sensors</button>
   <button id="sim">Simulate</button>
   <label>Mode
@@ -863,4 +863,4 @@ git push -u origin foundation
 gh pr create --base main --head foundation --title "Foundation: firmware, signal, bus contract, stubs"
 ```
 
-Both teammates read the PR (especially `web/bus.js`) before it merges. After the merge, start the [sound](2026-11-14-trackprint-sound.md) and [visuals](2026-11-14-trackprint-visuals.md) tracks.
+Both teammates read the PR (especially `web/bus.js`) before it merges. After the merge, start the [sound](2026-11-14-flatline-sound.md) and [visuals](2026-11-14-flatline-visuals.md) tracks.

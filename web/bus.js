@@ -1,6 +1,6 @@
-// trackPrint shared contract. web/audio and web/ui never import each other;
+// flatline shared contract. web/audio and web/ui never import each other;
 // they only talk through these events. Change this table only through a
-// contract/* branch (see docs/superpowers/plans/2026-11-14-trackprint.md).
+// contract/* branch (see docs/superpowers/plans/2026-11-14-flatline.md).
 //
 // event      from   detail
 // frame      core   { raws: number[4], ch: {finger, ac, beat, bpm, amp, inst, held}[4] }   ~50 Hz

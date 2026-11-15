@@ -1,4 +1,4 @@
-<title>trackPrint Directions</title>
+<title>flatline Directions</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anton&family=Chivo+Mono:wght@400;600&family=Fraunces:ital,opsz,wght@0,9..144,400;1,9..144,400&family=IBM+Plex+Mono:wght@400;500&family=Instrument+Serif&family=Nunito:wght@400;600&family=Share+Tech+Mono&family=Space+Grotesk:wght@500;600&display=swap">
 <style>
@@ -35,7 +35,7 @@ h2 { font: 600 15px var(--mono); letter-spacing: .08em; text-transform: uppercas
 <div class="wrap">
   <header>
     <div>
-      <h1>trackPrint: visual directions</h1>
+      <h1>flatline: visual directions</h1>
       <p>The same simulated session (72, 64, 88 and 58 BPM) drawn four ways: each sensor's pulse trace, the BPM, beat kicks, notes in voice colours, and the audio analyser. The pad player lifts their finger every 20 s so you can see the no-finger state.</p>
     </div>
     <button id="pause" type="button" aria-pressed="false">Pause</button>
@@ -62,7 +62,7 @@ h2 { font: 600 15px var(--mono); letter-spacing: .08em; text-transform: uppercas
       <p class="desc">Each player is a shape that breathes with their pulse, notes drift up like spores, and the pad chord washes the whole screen. Calm, and the least numeric.</p></figcaption></figure>
     <figure><div class="screen"><canvas id="D" aria-label="Printed chart recorder mockup"></canvas></div>
       <figcaption><span class="letter">D</span><span class="name">Printed <span class="sw"><i style="background:#1d1d1f"></i><i style="background:#c3341f"></i><i style="background:#1f4c9c"></i><i style="background:#2d7a40"></i></span></span>
-      <p class="desc">A chart recorder on graph paper: pens draw each pulse, beat ticks run along the edge, and notes are stamped like a score. The "print" in trackPrint. Light-themed.</p></figcaption></figure>
+      <p class="desc">A chart recorder on graph paper: pens draw each pulse, beat ticks run along the edge, and notes are stamped like a score. The "print" in flatline. Light-themed.</p></figcaption></figure>
   </div>
 </div>
 
@@ -160,7 +160,7 @@ function clinical(c, W, H) {
   const st = W / 80; c.lineWidth = 1;
   for (let k = 0, x = 0; x < W; k++, x += st) { c.strokeStyle = k % 5 ? 'rgba(61,255,122,.035)' : 'rgba(61,255,122,.09)'; c.beginPath(); c.moveTo(x, 0); c.lineTo(x, H); c.stroke(); }
   for (let k = 0, y = 0; y < H; k++, y += st) { c.strokeStyle = k % 5 ? 'rgba(61,255,122,.035)' : 'rgba(61,255,122,.09)'; c.beginPath(); c.moveTo(0, y); c.lineTo(W, y); c.stroke(); }
-  c.textBaseline = 'middle'; c.font = F(4.6 * u); c.fillStyle = '#3dff7a'; c.fillText('trackPrint', 2.5 * u, 5.5 * u);
+  c.textBaseline = 'middle'; c.font = F(4.6 * u); c.fillStyle = '#3dff7a'; c.fillText('flatline', 2.5 * u, 5.5 * u);
   c.font = F(2.6 * u); c.textAlign = 'right'; c.fillStyle = '#9fe8b5';
   c.fillText('[ CONNECT ]  [■ SIMULATE ]   MODE: BEATS   KIT: BASIC   ● RUNNING', W - 2.5 * u, 5.5 * u); c.textAlign = 'left';
   const top = 11 * u, mH = 21 * u, rH = (H - top - mH - 3 * u) / 4, tw = W * .72;
@@ -195,7 +195,7 @@ function club(c, W, H) {
   const C = ['#ff2e88', '#2e8bff', '#c6ff2e', '#a64bff'], u = H / 100;
   c.fillStyle = '#08040f'; c.fillRect(0, 0, W, H);
   c.textBaseline = 'middle'; c.font = `${5 * u}px Anton, Impact, sans-serif`; c.fillStyle = '#fff';
-  c.letterSpacing = `${.4 * u}px`; c.fillText('TRACKPRINT', 2.5 * u, 6 * u); c.letterSpacing = '0px';
+  c.letterSpacing = `${.4 * u}px`; c.fillText('FLATLINE', 2.5 * u, 6 * u); c.letterSpacing = '0px';
   const pills = [['CONNECT', 0], ['SIMULATE', 1], ['BEATS', 1], ['BITS', 0], ['KIT · BASIC', 0]];
   c.font = `600 ${2.2 * u}px "Chivo Mono", monospace`; let px = W - 2.5 * u;
   for (const [t, f] of pills.reverse()) {
@@ -240,7 +240,7 @@ function organic(c, W, H) {
   const bg = c.createLinearGradient(0, 0, W, H); bg.addColorStop(0, '#0b1430'); bg.addColorStop(1, '#1d1238'); c.fillStyle = bg; c.fillRect(0, 0, W, H);
   const wash = Math.max(0, 1 - (S.t - S.chordT) / 7);
   if (wash > 0) { const hue = ['#c79bff', '#ff9ed8', '#9bb7ff'][(S.chord[0] - 57) % 3] || '#c79bff'; const r = c.createRadialGradient(W * .8, H * .2, 0, W * .8, H * .2, W * .9); r.addColorStop(0, alpha(hue, .38 * wash)); r.addColorStop(1, alpha(hue, 0)); c.fillStyle = r; c.fillRect(0, 0, W, H); }
-  c.textBaseline = 'middle'; c.font = `italic ${5.2 * u}px Fraunces, Georgia, serif`; c.fillStyle = '#f4ecff'; c.fillText('trackPrint', 3 * u, 7 * u);
+  c.textBaseline = 'middle'; c.font = `italic ${5.2 * u}px Fraunces, Georgia, serif`; c.fillStyle = '#f4ecff'; c.fillText('flatline', 3 * u, 7 * u);
   c.font = `600 ${2.3 * u}px Nunito, system-ui, sans-serif`; c.textAlign = 'right'; c.fillStyle = 'rgba(244,236,255,.6)';
   c.fillText('connect  ·  simulating  ·  beats  ·  soft kit', W - 3 * u, 7 * u); c.textAlign = 'left';
   const R = Math.min(W * .08, H * .16);
@@ -276,7 +276,7 @@ function organicGround(c, W, H, u, status) {
   const bg = c.createLinearGradient(0, 0, W, H); bg.addColorStop(0, '#0b1430'); bg.addColorStop(1, '#1d1238'); c.fillStyle = bg; c.fillRect(0, 0, W, H);
   const wash = Math.max(0, 1 - (S.t - S.chordT) / 7);
   if (wash > 0 && S.chord) { const hue = ['#c79bff', '#ff9ed8', '#9bb7ff'][(S.chord[0] - 57) % 3] || '#c79bff'; const r = c.createRadialGradient(W * .8, H * .15, 0, W * .8, H * .15, W * .9); r.addColorStop(0, alpha(hue, .34 * wash)); r.addColorStop(1, alpha(hue, 0)); c.fillStyle = r; c.fillRect(0, 0, W, H); }
-  c.textBaseline = 'middle'; c.font = `italic ${5 * u}px Fraunces, Georgia, serif`; c.fillStyle = '#f4ecff'; c.fillText('trackPrint', 3 * u, 6.5 * u);
+  c.textBaseline = 'middle'; c.font = `italic ${5 * u}px Fraunces, Georgia, serif`; c.fillStyle = '#f4ecff'; c.fillText('flatline', 3 * u, 6.5 * u);
   c.font = `600 ${2.2 * u}px Nunito, system-ui, sans-serif`; c.textAlign = 'right'; c.fillStyle = 'rgba(244,236,255,.6)'; c.fillText(status, W - 3 * u, 6.5 * u); c.textAlign = 'left';
 }
 function blobPath(c, cx, cy, r, i) {
@@ -350,7 +350,7 @@ function paperPattern(c) {
 function printed(c, W, H) {
   const K = ['#1d1d1f', '#c3341f', '#1f4c9c', '#2d7a40'], u = H / 100, M = (s, w = 400) => `${w} ${s}px "IBM Plex Mono", monospace`, SER = (s) => `${s}px "Instrument Serif", Georgia, serif`;
   c.fillStyle = paperPattern(c); c.fillRect(0, 0, W, H);
-  c.textBaseline = 'alphabetic'; c.font = SER(7 * u); c.fillStyle = K[0]; c.fillText('trackPrint', 3 * u, 8.5 * u);
+  c.textBaseline = 'alphabetic'; c.font = SER(7 * u); c.fillStyle = K[0]; c.fillText('flatline', 3 * u, 8.5 * u);
   c.font = M(2 * u); c.fillStyle = '#55524b'; c.textAlign = 'right';
   c.fillText('CHART 014 · 14 NOV 2026 · 25 mm/s · SIMULATED   [connect sensors]  [simulate]  beats ▾  basic ▾', W - 3 * u, 8 * u); c.textAlign = 'left';
   c.strokeStyle = K[0]; c.lineWidth = 1; c.beginPath(); c.moveTo(3 * u, 11 * u); c.lineTo(W - 3 * u, 11 * u); c.stroke();

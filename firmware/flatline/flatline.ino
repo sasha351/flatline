@@ -1,4 +1,4 @@
-// trackPrint: read 4x MAX30102 through a TCA9548A mux, stream raw IR as CSV.
+// flatline: read 4x MAX30102 through a TCA9548A mux, stream raw IR as CSV.
 // Line format: ir0,ir1,ir2,ir3  at 50 Hz, 115200 baud. Missing sensor = 0.
 #include <Wire.h>
 #include "MAX30105.h"  // SparkFun MAX3010x library; also drives the MAX30102

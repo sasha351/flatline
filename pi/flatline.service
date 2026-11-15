@@ -1,10 +1,10 @@
 [Unit]
-Description=trackPrint heart-rate sensor reader
+Description=flatline heart-rate sensor reader
 After=multi-user.target
 
 [Service]
 User=flatline
-ExecStart=/usr/bin/python3 /opt/trackprint/trackprint.py
+ExecStart=/usr/bin/python3 /opt/flatline/flatline.py
 Restart=always
 RestartSec=2
 

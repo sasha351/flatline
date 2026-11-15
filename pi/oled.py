@@ -5,11 +5,11 @@ Each finger is a spiky ball with its own fill pattern (drums solid, bass checker
 pad dots). Every detected heartbeat shoots that ball's spikes out. When every present finger is
 on, the balls slide together into one ball whose colour regions are a dye swirl of the four patterns.
 
-run(q) is the entry point; trackprint.py starts it in its own process, so its CPU never holds the
+run(q) is the entry point; flatline.py starts it in its own process, so its CPU never holds the
 GIL of the sensor threads. q carries (ir0, ir1, ir2, ir3) tuples at 50 Hz, and ('n', voice, drum, velocity)
 note messages from the browser. Spikes follow the notes; with no note for NOTE_HOLD seconds they follow heartbeats.
 
-  python3 oled.py --demo       drive the real panel with simulated fingers (stop trackprint first)
+  python3 oled.py --demo       drive the real panel with simulated fingers (stop flatline first)
   python3 oled.py --selftest   no hardware: render simulated frames, check, time, print previews
 Pure stdlib plus smbus2 (imported only when the panel is opened).
 """
@@ -415,7 +415,7 @@ class Panel:
 
 def run(q):
     """Entry point. Drains q every frame (even with no panel, so it never backs up), updates, draws, sends."""
-    for sig in (signal.SIGHUP, signal.SIGUSR1):  # trackprint's tuning signals (pkill -f) also reach this process
+    for sig in (signal.SIGHUP, signal.SIGUSR1):  # flatline's tuning signals (pkill -f) also reach this process
         signal.signal(sig, signal.SIG_IGN)
     m = Model()
     panel = Panel()

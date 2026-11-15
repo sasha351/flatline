@@ -6,12 +6,12 @@ Every 2 s it reads the last 8 s of red + IR from the Pi (ssh flatline) and print
   rhythm  0..1, how evenly the wave repeats (0.6+ = a clear heartbeat) and the BPM it repeats at
   IR/red  a real pulse is bigger in IR than in red (1.3+); movement is the same in both (~1.0)
   shake   movement faster than 4 Hz, as % of the level
-Needs numpy and the reader's dump (pi/trackprint.py, SIGUSR1). Ctrl+C stops it."""
+Needs numpy and the reader's dump (pi/flatline.py, SIGUSR1). Ctrl+C stops it."""
 import subprocess, sys, time
 import numpy as np
 
 FS, WIN = 50, 8 * 50
-CMD = 'kill -USR1 $(systemctl show -p MainPID --value trackprint); sleep 0.3; tail -n %d /tmp/trackprint-dump.csv' % WIN
+CMD = 'kill -USR1 $(systemctl show -p MainPID --value flatline); sleep 0.3; tail -n %d /tmp/flatline-dump.csv' % WIN
 
 def band(x, lo, hi):  # zero-phase band-pass by FFT
     f = np.fft.rfftfreq(len(x), 1 / FS); X = np.fft.rfft(x - x.mean()); X[(f < lo) | (f > hi)] = 0

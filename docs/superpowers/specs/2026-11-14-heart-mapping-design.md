@@ -1,4 +1,4 @@
-# trackPrint: heart-driven tempo, patterns and timbre
+# flatline: heart-driven tempo, patterns and timbre
 
 ## Context
 Today the music has two modes. In `beats` mode each heartbeat triggers a note. In `bits` mode a fixed 110 BPM grid runs. Neither mode uses what a heart actually does. This design replaces both with one grid:

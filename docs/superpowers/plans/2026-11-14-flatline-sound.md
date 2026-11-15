@@ -1,10 +1,10 @@
-# trackPrint Part A: Sound
+# flatline Part A: Sound
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Overview, contract, and branching rules:** [`2026-11-14-trackprint.md`](2026-11-14-trackprint.md). Read it first.
+**Overview, contract, and branching rules:** [`2026-11-14-flatline.md`](2026-11-14-flatline.md). Read it first.
 
-**Owner:** Teammate A. **Branch:** `sound`, off `main` after the [foundation](2026-11-14-trackprint-foundation.md) merges.
+**Owner:** Teammate A. **Branch:** `sound`, off `main` after the [foundation](2026-11-14-flatline-foundation.md) merges.
 
 **Goal:** turn incoming sensor frames into music that sounds deliberate and good. This is the functional half: Tone.js setup, the trigger logic, and above all **instrument choice and sound design** for the four voices.
 

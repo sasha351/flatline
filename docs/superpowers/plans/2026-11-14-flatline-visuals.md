@@ -1,14 +1,14 @@
-# trackPrint Part B: Visuals
+# flatline Part B: Visuals
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Overview, contract, and branching rules:** [`2026-11-14-trackprint.md`](2026-11-14-trackprint.md). Read it first.
+**Overview, contract, and branching rules:** [`2026-11-14-flatline.md`](2026-11-14-flatline.md). Read it first.
 
-**Owner:** Teammate B. **Branch:** `visuals`, off `main` after the [foundation](2026-11-14-trackprint-foundation.md) merges.
+**Owner:** Teammate B. **Branch:** `visuals`, off `main` after the [foundation](2026-11-14-flatline-foundation.md) merges.
 
-**Design decided:** [`../specs/2026-11-14-trackprint-visuals-design.md`](../specs/2026-11-14-trackprint-visuals-design.md) ("Organic stage", mockup E). B1 Step 1 is done; every later step follows that spec.
+**Design decided:** [`../specs/2026-11-14-flatline-visuals-design.md`](../specs/2026-11-14-flatline-visuals-design.md) ("Organic stage", mockup E). B1 Step 1 is done; every later step follows that spec.
 
-**Goal:** make trackPrint look and feel like an instrument: the page, the controls, how it behaves in every state, and visuals that move with the players' pulses and with the music.
+**Goal:** make flatline look and feel like an instrument: the page, the controls, how it behaves in every state, and visuals that move with the players' pulses and with the music.
 
 **Files you own:** `web/index.html`, `web/ui/**` (`ui.js`, `style.css`, and any canvas modules, fonts or images you add). You may append your own section to `web/test.mjs` if you write pure helpers worth testing. Anything else in `web/` is shared (contract branch only) or the sound teammate's.
 
@@ -30,7 +30,7 @@
 
 **Files:** `web/ui/style.css`, `web/index.html`
 
-- [ ] **Step 1: Direction.** Pick one direction and commit to it. Some starting points: clinical (hospital monitor green on black, ECG grid), club (dark, saturated neon, big type), organic (soft gradients, breathing shapes), printed (paper, ink, the "print" in trackPrint). Collect 5–10 reference images in a folder outside the repo or a shared board.
+- [ ] **Step 1: Direction.** Pick one direction and commit to it. Some starting points: clinical (hospital monitor green on black, ECG grid), club (dark, saturated neon, big type), organic (soft gradients, breathing shapes), printed (paper, ink, the "print" in flatline). Collect 5–10 reference images in a folder outside the repo or a shared board.
 - [ ] **Step 2: Tokens.** Move the inline `<style>` from `index.html` into `web/ui/style.css` (linked from `index.html`). Define the palette as CSS custom properties on `:root`: background, text, muted, and **one colour per voice** (drums, bass, lead, pad). Every later task uses these.
 - [ ] **Step 3: Type.** Choose one or two fonts. Self-host them in `web/ui/fonts/` (the demo may run without Wi-Fi) or use system fonts.
 - [ ] **Step 4:** Commit: `feat(ui): visual direction and design tokens`.

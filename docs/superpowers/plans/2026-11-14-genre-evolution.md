@@ -66,7 +66,7 @@ git switch -c sound-genre-evolution
 If that branch already exists, inspect it; use a fresh suffix rather than reset
 or overwrite it. If checkout is dirty, preserve user changes. The known handoff
 docs are this plan, its spec, and the follow-up paragraph in
-`docs/superpowers/plans/2026-11-14-trackprint-sound.md`; carry these into the new
+`docs/superpowers/plans/2026-11-14-flatline-sound.md`; carry these into the new
 branch and commit only these explicit paths if still uncommitted. Never use
 `git add .`. If isolation would strand uncommitted handoff files, first save
 those docs on the new branch, then create the worktree from it.

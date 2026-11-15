@@ -12,10 +12,11 @@ apt-get install -y python3-smbus2 i2c-tools
 
 # One hardware I2C bus + three bit-banged ones (sensor 0..3 -> i2c-1,3,4,5),
 # and USB gadget mode so the laptop sees the Pi as a serial port.
-if ! grep -q '^# trackPrint' "$CONFIG"; then
+# ponytail: also match the old "# trackPrint" marker so re-runs on a pre-rename Pi don't append twice
+if ! grep -qE '^# (trackPrint|flatline)$' "$CONFIG"; then
   cat >> "$CONFIG" <<'EOF'
 
-# trackPrint
+# flatline
 [all]
 dtparam=i2c_arm=on
 dtoverlay=i2c-gpio,bus=3,i2c_gpio_sda=17,i2c_gpio_scl=27
@@ -35,11 +36,16 @@ grep -q 'modules-load=dwc2,g_serial' "$CMDLINE" ||
 
 usermod -aG i2c,dialout "$USER_NAME"
 
-install -d /opt/trackprint
-install -m 755 trackprint.py /opt/trackprint/trackprint.py
-install -m 755 oled.py /opt/trackprint/oled.py
-sed "s/^User=.*/User=$USER_NAME/" trackprint.service > /etc/systemd/system/trackprint.service
+# ponytail: one-time migration from the old trackprint name; delete once the Pi has run it
+systemctl disable --now trackprint.service 2>/dev/null || true
+rm -rf /opt/trackprint /etc/systemd/system/trackprint.service
+[ -f "/home/$USER_NAME/trackprint.conf" ] && mv "/home/$USER_NAME/trackprint.conf" "/home/$USER_NAME/flatline.conf"
+
+install -d /opt/flatline
+install -m 755 flatline.py /opt/flatline/flatline.py
+install -m 755 oled.py /opt/flatline/oled.py
+sed "s/^User=.*/User=$USER_NAME/" flatline.service > /etc/systemd/system/flatline.service
 systemctl daemon-reload
-systemctl enable trackprint.service
+systemctl enable flatline.service
 
 echo "done; reboot to apply"

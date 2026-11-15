@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking. This plan was written for a controller that has **no memory of the design sessions**: everything you need is in this file, the mockup it names, and the repo.
 
-**Goal:** Replace the web app's stage visuals with the approved "black chrome ferrofluid in backlit windows" design, and rename the site from trackPrint to **flatline**.
+**Goal:** Replace the web app's stage visuals with the approved "black chrome ferrofluid in backlit windows" design, and rename the site from flatline to **flatline**.
 
 **Architecture:** The approved design already exists as one working, self-contained HTML mockup. This plan ports it into the app's ES modules. A new WebGL2 module (`web/ui/fluid.js`) draws the fluid and the dye-lit window; a new pure module (`web/ui/dynamics.js`) holds the beat spring and the merge rule; `web/ui/stage.js` is rewritten to feed real sensor data into both and to lay out the page; the 2D canvas keeps only the pulse traces and the notes lane.
 
@@ -20,7 +20,7 @@ Run it: `cd web && python3 -m http.server 8000`, open `http://localhost:8000` in
 
 ### The source of truth for the look
 
-`docs/superpowers/specs/2026-11-14-trackprint-ferrofluid-mockups.html` (529 lines, one file, runs from `file://` in Chrome). **Open it before doing anything.** The grey strip at the top is the mockup's remote control and is not part of the design. It was approved by the user after many rejected rounds. Treat its look, sizes, timing and shader code as final:
+`docs/superpowers/specs/2026-11-14-flatline-ferrofluid-mockups.html` (529 lines, one file, runs from `file://` in Chrome). **Open it before doing anything.** The grey strip at the top is the mockup's remote control and is not part of the design. It was approved by the user after many rejected rounds. Treat its look, sizes, timing and shader code as final:
 
 - **Port, do not redesign.** Copy shader strings and tuning constants verbatim. Do not "improve" the fluid, the colours, the spike shape or the dye motion.
 - **Do not edit the mockup file.** It stays as the reference.
@@ -68,7 +68,7 @@ shot() { # shot <out.png> <url> [budget_ms]
   "$CHROME" --headless=new --hide-scrollbars --enable-unsafe-swiftshader --use-angle=swiftshader \
     --window-size=1920,1080 --virtual-time-budget="${3:-6000}" --screenshot="$1" "$2" 2>/dev/null
 }
-MOCK="file://$PWD/docs/superpowers/specs/2026-11-14-trackprint-ferrofluid-mockups.html"
+MOCK="file://$PWD/docs/superpowers/specs/2026-11-14-flatline-ferrofluid-mockups.html"
 ```
 
 ---
@@ -77,7 +77,7 @@ MOCK="file://$PWD/docs/superpowers/specs/2026-11-14-trackprint-ferrofluid-mockup
 
 - No build step, no package manager, no new dependencies. Plain ES modules under `web/`, loaded by `web/index.html`.
 - Do not change `web/bus.js`, `web/core.js`, `web/serial.js`, `web/signal.js` or anything under `web/audio/`, `pi/`, `firmware/`.
-- Do not edit `docs/superpowers/specs/2026-11-14-trackprint-ferrofluid-mockups.html`.
+- Do not edit `docs/superpowers/specs/2026-11-14-flatline-ferrofluid-mockups.html`.
 - Ported shader source (the GLSL strings in mockup lines 220-231 and 270-396) is copied byte-for-byte. Ported tuning constants keep their values.
 - Everything on screen is sized from `u` = 1% of the viewport height (CSS: `1vh`; JS: `innerHeight / 100`), so it scales to a projector.
 - Fonts are only the self-hosted files in `web/ui/fonts/`. No network font loads.
@@ -105,7 +105,7 @@ MOCK="file://$PWD/docs/superpowers/specs/2026-11-14-trackprint-ferrofluid-mockup
 | `web/index.html` | modify | New name, fluid canvas, text layer, error element. |
 | `web/ui/style.css` | rewrite | New tokens and layout from the mockup. |
 | `web/test.mjs` | modify | Tests for `dynamics.js`. |
-| `docs/superpowers/specs/2026-11-14-trackprint-visuals-design.md` | modify | Bring the written design in line with what ships. |
+| `docs/superpowers/specs/2026-11-14-flatline-visuals-design.md` | modify | Bring the written design in line with what ships. |
 | `README.md` | modify | Site name. |
 
 ---
@@ -118,7 +118,7 @@ MOCK="file://$PWD/docs/superpowers/specs/2026-11-14-trackprint-ferrofluid-mockup
 
 ```bash
 git checkout -b flatline-ferrofluid
-git add docs/superpowers/specs/2026-11-14-trackprint-ferrofluid-mockups.html docs/superpowers/plans/2026-11-14-flatline-ferrofluid-overhaul.md
+git add docs/superpowers/specs/2026-11-14-flatline-ferrofluid-mockups.html docs/superpowers/plans/2026-11-14-flatline-ferrofluid-overhaul.md
 git commit -m "docs: approved ferrofluid mockup and overhaul plan"
 ```
 
@@ -268,7 +268,7 @@ Run from the repo root:
 node -e "
 const fs=require('fs');
 const strip=s=>s.replace(/\s+/g,'');
-const m=fs.readFileSync('docs/superpowers/specs/2026-11-14-trackprint-ferrofluid-mockups.html','utf8');
+const m=fs.readFileSync('docs/superpowers/specs/2026-11-14-flatline-ferrofluid-mockups.html','utf8');
 const f=fs.readFileSync('web/ui/fluid.js','utf8');
 const cut=(s,a,b)=>strip(s.slice(s.indexOf(a),s.indexOf(b,s.indexOf(a))));
 console.log('RAY',cut(m,'vec2 isf(','o = acc * uFade;')===cut(f,'vec2 isf(','o = acc * uFade;'));
@@ -487,13 +487,13 @@ git commit -m "feat: notes lane restyled for the flatline stage"
 **Suggested tier:** small.
 
 **Files:**
-- Modify: `docs/superpowers/specs/2026-11-14-trackprint-visuals-design.md`
+- Modify: `docs/superpowers/specs/2026-11-14-flatline-visuals-design.md`
 - Modify: `README.md`
 
 **Requirements:**
-- `README.md`: change the top heading to `# flatline` and add one sentence under it: the project folder, repo and Pi service are still named `trackprint`. Change nothing else.
+- `README.md`: change the top heading to `# flatline` and add one sentence under it: the project folder, repo and Pi service are still named `flatline`. Change nothing else.
 - Design spec: rewrite these sections to describe what now ships, in the document's existing plain style, and leave the rest:
-  - the opening lines: point to `2026-11-14-trackprint-ferrofluid-mockups.html` as the current mockup and say the earlier "organic stage" direction is superseded;
+  - the opening lines: point to `2026-11-14-flatline-ferrofluid-mockups.html` as the current mockup and say the earlier "organic stage" direction is superseded;
   - **Tokens**: the new values (`--bg #070708`, `--bg2 #17181c`, `--text #f3f2ee`, `--muted`, `--line`, drums `#ff3b1f`, bass `#1f6bff`, lead `#ffd400`, pad `#ff2d87`, `--other #9fe6c4`); remove the pad wash hues;
   - **Layout**: header 10vh overlaying a full-height stage; the two states (assigning, merged) and the rule that switches them (all four fingers down with a BPM; split after a finger is up for 2 s); lane in the bottom 16vh;
   - **Voice panels**: the black ferrofluid ball in a backlit window, spikes on the beat, smooth between beats, grey when no finger;
@@ -501,11 +501,11 @@ git commit -m "feat: notes lane restyled for the flatline stage"
   - **States**: reduced motion now means no spikes, cross-fade between layouts, still dye, a brightness lift on the beat. Add: WebGL2 with float render targets is required, with a message shown if missing.
 
 - [ ] **Step 1: Edit both files.**
-- [ ] **Step 2: Check.** Run: `grep -n -i "lavender\|#c79bff\|wash" docs/superpowers/specs/2026-11-14-trackprint-visuals-design.md`. Expected: no output, or only a sentence saying the wash was removed.
+- [ ] **Step 2: Check.** Run: `grep -n -i "lavender\|#c79bff\|wash" docs/superpowers/specs/2026-11-14-flatline-visuals-design.md`. Expected: no output, or only a sentence saying the wash was removed.
 - [ ] **Step 3: Commit**
 
 ```bash
-git add README.md docs/superpowers/specs/2026-11-14-trackprint-visuals-design.md
+git add README.md docs/superpowers/specs/2026-11-14-flatline-visuals-design.md
 git commit -m "docs: flatline name and ferrofluid stage design"
 ```
 
