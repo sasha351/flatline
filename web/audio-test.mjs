@@ -10,7 +10,7 @@ import { phraseSeed, note, SCALE, ROOT } from './audio/mapping.js';
 import { createEvolution, snapToChord } from './audio/evolution.js';
 import { rng, makeMotif, develop } from './audio/melody.js';
 
-const names = ['French house', 'UK garage', 'Ambient', 'Russian hardbass', 'Drum and bass', 'Acid techno', 'Lo-fi', 'Boom bap', 'Psytrance', 'Trap', 'Dubstep', 'Hardstyle', 'Reggaeton', 'Footwork', 'Jersey club', 'Hard groove', 'Phonk', 'Dream pop', 'Hyperpop', 'Rock', 'Drill', 'R&B', 'Punk', 'Metal'];
+const names = ['French house', 'UK garage', 'Ambient', 'Russian hardbass', 'Drum and bass', 'Acid techno', 'Lo-fi', 'Boom bap', 'Psytrance', 'Trap', 'Dubstep', 'Hardstyle', 'Reggaeton', 'Footwork', 'Jersey club', 'Hard groove', 'Phonk', 'Dream pop', 'Hyperpop', 'Rock', 'Drill', 'R&B', 'Emo', 'Metal', 'EDM', 'Girl EDM'];
 
 test('genre names, tempo ranges, defaults, phrase lengths, and swing', () => {
   assert.deepEqual(Object.keys(GENRES), names);
@@ -41,8 +41,10 @@ test('genre names, tempo ranges, defaults, phrase lengths, and swing', () => {
     ['Rock', 140, 4],
     ['Drill', 142, 4],
     ['R&B', 150, 4],
-    ['Punk', 180, 4],
+    ['Emo', 160, 4],
     ['Metal', 170, 4],
+    ['EDM', 128, 4],
+    ['Girl EDM', 150, 4],
   ]) {
     assert.deepEqual(createTempo(name)([HEART_OFF, HEART_OFF, HEART_OFF, HEART_OFF], 0.1), { song: def, heart: 0 });
     assert.equal(GENRES[name].phraseBars, bars);
@@ -229,7 +231,7 @@ test('kit boundaries expose four bounded, disposable, duration-aware kits', () =
   }});
   const env = { Tone, GENRES: {} };
   runInNewContext(source, env);
-  const names = ['French house', 'UK garage', 'Ambient', 'Russian hardbass', 'Drum and bass', 'Acid techno', 'Lo-fi', 'Boom bap', 'Psytrance', 'Trap', 'Dubstep', 'Hardstyle', 'Reggaeton', 'Footwork', 'Jersey club', 'Hard groove', 'Phonk', 'Dream pop', 'Hyperpop', 'Rock', 'Drill', 'R&B', 'Punk', 'Metal'];
+  const names = ['French house', 'UK garage', 'Ambient', 'Russian hardbass', 'Drum and bass', 'Acid techno', 'Lo-fi', 'Boom bap', 'Psytrance', 'Trap', 'Dubstep', 'Hardstyle', 'Reggaeton', 'Footwork', 'Jersey club', 'Hard groove', 'Phonk', 'Dream pop', 'Hyperpop', 'Rock', 'Drill', 'R&B', 'Emo', 'Metal', 'EDM', 'Girl EDM'];
   assert.deepEqual(Object.keys(env.KITS), names);
   const hearts = {
     drums: { hr: 75, press: 0.5, breath: 0 },
@@ -783,7 +785,7 @@ test('motif with n = 7 resolves to root, 5th or octave root', () => {
   assert.ok([0, 4, 7].includes(d[d.findLastIndex((x) => x !== null)]));
 });
 
-for (const name of ['French house', 'UK garage', 'Russian hardbass', 'Drum and bass', 'Acid techno', 'Lo-fi', 'Boom bap', 'Psytrance', 'Trap', 'Dubstep', 'Hardstyle', 'Reggaeton', 'Footwork', 'Jersey club', 'Hard groove', 'Phonk', 'Dream pop', 'Hyperpop', 'Rock', 'Drill', 'R&B', 'Punk', 'Metal']) {
+for (const name of ['French house', 'UK garage', 'Russian hardbass', 'Drum and bass', 'Acid techno', 'Lo-fi', 'Boom bap', 'Psytrance', 'Trap', 'Dubstep', 'Hardstyle', 'Reggaeton', 'Footwork', 'Jersey club', 'Hard groove', 'Phonk', 'Dream pop', 'Hyperpop', 'Rock', 'Drill', 'R&B', 'Emo', 'Metal', 'EDM', 'Girl EDM']) {
   test(`${name}: notes in key, lead strong beats on chord tones`, () => {
     const { key } = GENRES[name];
     const steps = runSteps(name, 16 * GENRES[name].phraseBars * 2);
@@ -831,7 +833,8 @@ test('genre signatures', () => {
   assert.ok(g.Rock.key.chords.every((c) => c.length === 2 && c[1] - c[0] === 4), 'rock pad plays power chords (root and fifth)');
   for (const name of ['Dream pop', 'Drill', 'R&B']) assert.ok(g[name].halfTime && g[name].patterns.drums.every((v) => (v.snare ?? v.rim)[8]), `${name}: half-time, backbeat on 3`);
   assert.ok(g.Metal.patterns.drums.some((v) => v.kick.every(Boolean)), 'metal has a double-kick 16th variant');
-  assert.ok([0, 4, 8, 12].every((i) => g.Punk.patterns.drums[0].kick[i]) && [2, 6, 10, 14].every((i) => g.Punk.patterns.drums[0].snare[i]), 'punk oom-pah: kick on the beat, snare on the offbeat');
+  assert.ok(g.Emo.patterns.lead.every((v) => v.filter(Boolean).length >= 11), 'emo lead is busy twinkly arpeggios');
+  assert.ok(g.EDM.patterns.drums.every((v) => [0, 4, 8, 12].every((i) => v.kick[i])) && g.EDM.patterns.bass.every((v) => v[2] && v[6] && !v[0]), 'EDM: four-on-the-floor, offbeat bass');
   for (const v of g.Reggaeton.patterns.drums) assert.ok(v.snare[6] && v.snare[12], 'dembow snare');
   for (const v of g['Boom bap'].patterns.drums) {
     assert.ok(v.kick[0] === 1, 'boom on the one');

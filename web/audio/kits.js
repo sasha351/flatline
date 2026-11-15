@@ -309,7 +309,7 @@ Object.assign(DRUMS, {
     clap: { freq: 1300, volume: -8 },
     hat: { kind: 'noise', closed: 0.02, open: 0.25, hp: 9000, volume: -16 },
   },
-  punk: { // loud and trashy: snappy kick, cracking snare, washy hats
+  emo: { // a live-sounding kit: snappy kick, cracking snare, washy hats
     level: -6, verb: -14,
     kick: { note: 'A1', pitchDecay: 0.03, octaves: 3, decay: 0.28, click: -6, drive: 0.3 },
     snare: { body: 'E3', bodyDecay: 0.12, noise: 'white', hp: 1000, lp: 10000, decay: 0.2, volume: -2 },
@@ -997,14 +997,14 @@ export const KITS = {
     lead: { ...LEAD.talkbox, level: 2, brightLo: 900, brightHi: 3500, echoBase: 0.12 },
     pad: { ...PAD.keys, filterLo: 500, filterHi: 2800 },
   }),
-  // Fast and loud: oom-pah beat on a trashy kit, eighth-note bass, simple distorted hook, downpicked power chords.
-  'Punk': makeKit({
-    tail: 2,
-    reverb: { decay: 1.2, preDelay: 0.01, wet: 0.35 },
-    drums: { ...DRUMS.punk, brightness: 9500 },
-    bass: { ...BASS.pluck, osc: 'sawtooth', level: -9, filterLo: 450, filterHi: 1500, q: 2 },
-    lead: { ...LEAD.guitar, brightLo: 2000, brightHi: 5000 },
-    pad: { ...PAD.powerChords, drive: 0.85, filterLo: 1400, filterHi: 4500 },
+  // Midwest emo: driving beat, melodic bass, twinkly clean-guitar arpeggios, crunchy major-seventh strums.
+  'Emo': makeKit({
+    tail: 3,
+    reverb: { decay: 1.8, preDelay: 0.01, wet: 0.45 },
+    drums: { ...DRUMS.emo, brightness: 9500 },
+    bass: { ...BASS.pluck, osc: 'sawtooth', level: -10, dur: '8n', filterLo: 450, filterHi: 1400, q: 2 },
+    lead: { ...LEAD.pluck, dur: '8n', delay: { pingpong: true, time: '8n.', feedback: 0.25, send: -14 }, verb: -10, level: -6, brightLo: 1500, brightHi: 5000, echoBase: 0.12 },
+    pad: { ...PAD.powerChords, drive: 0.35, level: -18, filterLo: 1200, filterHi: 4000 },
   }),
   // Double-kick 16ths on a tight clicky kit, bass locked to the kick, a heavily driven riff, palm-muted chugs.
   'Metal': makeKit({
@@ -1014,5 +1014,26 @@ export const KITS = {
     bass: { ...BASS.pluck, osc: 'sawtooth', level: -10, dur: '32n', filterLo: 400, filterHi: 1200, q: 2, grit: 1.5 },
     lead: { ...LEAD.guitar, gain: 14, level: -20, brightLo: 1800, brightHi: 4500 },
     pad: { ...PAD.powerChords, drive: 1, release: 0.05, level: -15, filterLo: 1100, filterHi: 3500 },
+  }),
+  // Festival big room: hard pumping sidechain, punchy kick and clap, offbeat bass, supersaw anthem lead and chords.
+  'EDM': makeKit({
+    tail: 4,
+    pump: 0.55,
+    reverb: { decay: 3, preDelay: 0.02, wet: 0.6 },
+    drums: { ...DRUMS.club, brightness: 11500 },
+    bass: { ...BASS.pump, grit: 0.6, level: 0 },
+    lead: { ...LEAD.supersaw, delay: { pingpong: true, time: '8n.', feedback: 0.3, send: -10 }, level: -9, brightLo: 2500, brightHi: 8000, echoBase: 0.15 },
+    pad: { ...PAD.rave, spread: 40, level: -6, filterLo: 1200, filterHi: 6000 },
+  }),
+  // Sugary future bass, half-time: punchy kit with hat rolls, 808 sub, high vocal-chop lead,
+  // wide supersaw chords pumped hard so they swell after every beat.
+  'Girl EDM': makeKit({
+    tail: 4,
+    pump: 0.45,
+    reverb: { decay: 2.5, preDelay: 0.02, wet: 0.6 },
+    drums: { ...DRUMS.trap, brightness: 12500 },
+    bass: { ...BASS[808], level: -12 },
+    lead: { ...LEAD.chop, delay: { pingpong: true, time: '8n.', feedback: 0.3, send: -10 }, level: 0, brightLo: 2500, brightHi: 7000, echoBase: 0.18 },
+    pad: { ...PAD.rave, spread: 45, attack: 0.02, release: 0.4, level: -10, filterLo: 1500, filterHi: 6500 },
   }),
 };
