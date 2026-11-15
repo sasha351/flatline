@@ -16,7 +16,7 @@
 // note       audio  { voice, ...mapVoice params }, fired when the sound is heard
 // sensor*    core   0..3 = voice the real sensor plays (?fill=sim), null otherwise
 // button     core   none. The Pi's push button was pressed: the UI steps to the next kit.
-// tap        ui     0..3: that voice's blob was clicked (core toggles a stand-in heartbeat for an unplugged sensor)
+// tap        ui     0..3: that voice's blob was clicked (with ?standin, core toggles a stand-in heartbeat for that sensor)
 // tapped     core   boolean[4]: which voices are played by a stand-in heartbeat
 // perf       audio  { steps, late, worst, state }, once a bar, only with ?perf: 16th steps run, how many were scheduled
 //                   late, the smallest lead over the audio clock in seconds, and the audio context's state

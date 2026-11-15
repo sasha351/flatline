@@ -127,7 +127,7 @@ Each active sensor evolves its voice from its recent signal history and the shar
 
 **Genre button.** A push button between GPIO26 (pin 37) and any GND on the Pi steps to the next kit, wrapping from the last to the first. The Pi sends a `b` line over the serial link on each press (debounced 40 ms); with no button wired nothing happens.
 
-**Stand-in heartbeats.** With sensors missing, click a voice's blob (bass and lead, while sensors 2 and 3 are unplugged) to start a stand-in heartbeat for it, and click again to stop. It runs at about the average of the real fingers' stabilised BPM and does not count toward the song tempo. `CLICK_SIM` in `web/core.js` lists which voices can be clicked; empty it when the sensors are back.
+**Stand-in heartbeats.** Off by default, since all four sensors work. If a sensor is missing, open the page with `?standin=2,3` (sensor numbers) and click that voice's blob to start a stand-in heartbeat; click again to stop. It runs at about the average of the real fingers' stabilised BPM and does not count toward the song tempo.
 
 Handy URL tricks:
 - **Not all four sensors wired?** `?fill=sim` simulates the channels that read `0`. The real ones play from your fingers.

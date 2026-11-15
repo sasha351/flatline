@@ -221,6 +221,10 @@ import { start, standInBpms } from './core.js';
   let frame = null, tappedNow = [];
   on('frame', (d) => (frame = d));
   on('tapped', (t) => (tappedNow = t));
+  globalThis.location = { search: '' };
+  emit('tap', 1);
+  assert.deepEqual(tappedNow, [], 'no ?standin: a click starts nothing');
+  globalThis.location = { search: '?standin=2' };
   let feed;
   await start((onFrame) => { feed = onFrame; return async () => {}; });
   emit('tap', 1);
@@ -234,6 +238,7 @@ import { start, standInBpms } from './core.js';
   assert.ok(frame.ch[1].stable && Math.abs(frame.ch[1].bpm - 90) < 3, `stand-in sits near the real rate: ${frame.ch[1].bpm}`);
   emit('tap', 1);
   assert.deepEqual(tappedNow, [false, false, false, false]);
+  delete globalThis.location;
 }
 console.log('stand-in ok');
 {

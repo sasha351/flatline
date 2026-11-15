@@ -9,7 +9,9 @@ Working notes for the `SamAloneTime` branch. The branch covers four requests fro
 
 Status (2026-11-15): points 1, 2 and 4 are built on this branch (3, the OLED, is left as it is at Sam's request) and pass the repo's tests and replays of the recordings. Not yet tried on the real sensors: see "Still to test" at the bottom.
 
-## Test setup: two sensors
+## Test setup
+
+**All four sensors are back (2026-11-15)**, so nothing is simulated by default any more: stand-in heartbeats now need `?standin=2,3` in the page address (sensor numbers), and `BROKEN_SENSORS` in `web/serial.js` is empty. Earlier tests on this branch, below, were run on two sensors:
 
 Sensors 2 and 3 got unplugged, so every hardware test on this branch is run on two sensors: **sensor 1 (drums) and sensor 4 (pad)**. Bass and lead can be played by a stand-in heartbeat (click their blob after connecting). A stand-in is not a real reading, so it runs at about the average of the real fingers' stabilised BPM and follows it (bass 2 BPM under, lead 2 over, so they don't beat in unison; 75 until a real finger has stabilised). It is also left out of the average heart rate and the song tempo, so it cannot move them (Sam, 2026-11-15; before that it ran at a random 60-100).
 
@@ -120,7 +122,7 @@ Sam tried the branch on the real sensors on 2026-11-15 and reports it works well
 
 **How a kit is added.** Two entries with the same name: the music in `web/audio/patterns.js` (`GENRES`: key, chords, idle tempo, swing, and three or more pattern variants for each of drums, bass, lead and pad) and the sound in `web/audio/kits.js` (`KITS`: one preset each from `DRUMS`, `BASS`, `LEAD`, `PAD`, plus reverb and sidechain `pump`). The kit menu, the Pi's genre button and the shared tests pick a new name up from those tables. `web/audio-test.mjs` lists the kit names in three places and needs the new name added.
 
-**Added:** every kit has all four voices, so they are ready for when sensors 2 and 3 are plugged back in (until then, click the bass and lead blobs for stand-in heartbeats).
+**Added:** every kit has all four voices, so all four voices can be heard now that sensors 2 and 3 are back (before that, click the bass and lead blobs for stand-in heartbeats).
 
 | Kit | Drums (sensor 1) | Bass (2) | Lead (3) | Pad (4) |
 |---|---|---|---|---|

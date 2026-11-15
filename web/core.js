@@ -55,11 +55,13 @@ on('route', (ch) => {
   route = ch;
   announce();
 });
-// Sensors 2 and 3 are unplugged for now: clicking their blob starts a stand-in heartbeat (its rate:
-// see standIn above), and clicking it again stops it.
-const CLICK_SIM = [1, 2];         // ponytail: channels a click can stand in for; empty this when the sensors are back
+// All four sensors work, so clicks do nothing by default. If one dies again, open the page with ?standin=2,3
+// (sensor numbers as on screen): clicking those blobs starts a stand-in heartbeat (its rate: see standIn
+// above), and clicking again stops it. Read at click time, like ?fill=sim.
+const clickSim = () => (new URLSearchParams(globalThis.location?.search).get('standin') ?? '')
+  .split(',').map((n) => parseInt(n, 10) - 1).filter((ch) => ch >= 0 && ch < VOICES.length);
 on('tap', (ch) => {
-  if (filling || !CLICK_SIM.includes(ch)) return; // with ?fill=sim a click moves the real sensor instead
+  if (filling || !clickSim().includes(ch)) return; // with ?fill=sim a click moves the real sensor instead
   tapped = tapped.map((on, i) => (i === ch ? !on : on));
   emit('tapped', [...tapped]);
 });
