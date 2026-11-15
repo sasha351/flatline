@@ -18,6 +18,8 @@
 // button     core   none. The Pi's push button was pressed: the UI steps to the next kit.
 // tap        ui     0..3: that voice's blob was clicked (core toggles a stand-in heartbeat for an unplugged sensor)
 // tapped     core   boolean[4]: which voices are played by a stand-in heartbeat
+// perf       audio  { steps, late, worst, state }, once a bar, only with ?perf: 16th steps run, how many were scheduled
+//                   late, the smallest lead over the audio clock in seconds, and the audio context's state
 // tempo      audio  { song, heart }: the song's BPM and the average heart BPM behind it (0 = no hearts), on each change
 //
 // * sticky: a late subscriber gets the last value immediately.

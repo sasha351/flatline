@@ -8,6 +8,10 @@ import { GENRES } from './patterns.js';
 import { createEvolution } from './evolution.js';
 
 const [DRUMS, BASS, LEAD, PAD] = [0, 1, 2, 3];
+// Diagnostics: open the page with ?perf to see whether notes are being scheduled late (see 'perf' in bus.js).
+const PERF = /[?&]perf\b/.test(globalThis.location?.search ?? '');
+const LATE = 0.02; // a step scheduled less than this far ahead of the audio clock risks an audible gap
+let perf = { steps: 0, late: 0, worst: Infinity };
 const master = new Tone.Gain();
 const comp = new Tone.Compressor({ threshold: -18, ratio: 3, attack: 0.01, release: 0.2 });
 const limiter = new Tone.Limiter(-1);
@@ -100,6 +104,12 @@ function play(voice, params, heart, time, key = voice, sourceKit = kit, sourceNa
 const repeat = (time) => {
   if (!running) return;
   const s = step++ % 16;
+  if (PERF) {
+    const ahead = time - Tone.now(); // normally about the 0.1 s look-ahead; it shrinks when this thread was held up
+    perf.steps++; perf.worst = Math.min(perf.worst, ahead);
+    if (ahead < LATE) perf.late++;
+    if (s === 0) emit('perf', { ...perf, state: Tone.getContext().state });
+  }
   if (s === 0 && pendingName) activate(pendingName, time);
   if (failedKit) return;
 

@@ -128,6 +128,7 @@ Each active sensor evolves its voice from its recent signal history and the shar
 Handy URL tricks:
 - **Not all four sensors wired?** `?fill=sim` simulates the channels that read `0`. The real ones play from your fingers.
 - **A sensor died?** `?sim=4` (or `?sim=3,4`) simulates it for one visit. List it in `BROKEN_SENSORS` in `web/serial.js` to make that the default. A simulated sensor plays a heartbeat whenever every working sensor has a finger on it, so the four can still merge.
+- **Sound breaking up?** `?perf` shows a small readout: how many notes were scheduled late, the longest stall of the page, and slow frames. Late notes or stalls mean the page is being held up; all zeros means the cause is outside it (CPU load from other programs, or the audio device).
 
 ## Test
 ```bash

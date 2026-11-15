@@ -134,6 +134,16 @@ On the two play logs (sensors 1-3 together): 21-40 changes a minute before, 8-10
 
 **How it was checked.** Unit tests, plus every kit rendered offline with the real Tone.js in headless Chrome, two bars per voice: all eight build, none throws, no bad samples, and the new kits' loudness is in the range of the old ones (whole-kit RMS -12.4 to -16.7 dB against -12.6 to -17.8 dB). **Nobody has listened to them yet**: the levels are measured, the character (especially the scratch) needs ears.
 
+## Dropouts report (2026-11-15), not yet explained
+
+Sam heard brief silences ("clipping"): all instruments stall for a few milliseconds, with no finger lost and no BPM re-search. Cause not found yet.
+
+- **Ruled out:** tempo changes. In a real browser (offline render) the 16th-note clock stays even through the retargets this branch makes, with no stall and no tempo jump.
+- **Likely contributor:** Claude's own test runs. They rendered audio in headless Chrome on the same laptop, used a lot of CPU, and played through the speakers (Sam heard them). Later test runs must use `--mute-audio`. Two older headless Chrome test browsers (profiles `/tmp/claude-1000/perf-prof-*`, PIDs 191685 and 191925, started about 9.5 h earlier) were also still running, one at about 30% CPU plus GPU.
+- **Cannot be measured headless:** without a GPU the fluid takes about 400 ms a frame, so every note is late there. It has to be measured in Sam's real browser.
+- **Added:** `?perf` readout (late notes, longest stall, slow frames), and the stage now writes to the DOM only when a value changes.
+- **Next:** read `?perf` while the dropouts happen. Late notes or stalls: the page is held up (then raise Tone's look-ahead or cut main-thread work). All zeros: CPU load or the audio device.
+
 ## Squeeze is kept out of this branch
 
 The experimental squeeze-for-volume work (`?squeeze`) is not on `SamAloneTime`, so it cannot affect the BPM tests. It is on the `squeeze-experiment` branch as a single commit on top of this branch's "Pi genre button" commit: `git diff SamAloneTime squeeze-experiment` (at the time it was split) is exactly the squeeze change.

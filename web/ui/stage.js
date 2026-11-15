@@ -30,6 +30,9 @@ document.fonts.load(`10px ${COL.serif}`); // roman Fraunces isn't used by the DO
 const fluid = createFluid($('gl'), COLS.map(hex3), (msg) => { $('err').textContent = msg; });
 
 const P = VOICES.map(() => ({ buf: new Float32Array(N), head: 0, count: 0, max: 1, field: newField(), beat: false, pres: 0, m: 0, cx: 0, bump: false }));
+// DOM writes only when the value changes: a write, even of the same text, makes the browser redo style and
+// layout that frame, and time lost on this thread is time the audio scheduler does not get.
+const put = (target, key, value) => { if (target[key] !== value) target[key] = value; };
 const els = P.map(() => { // per-player text: BPM and label
   const bpm = document.createElement('div'), lab = document.createElement('div');
   bpm.className = 'bpm'; lab.className = 'lab'; text.append(bpm, lab);
@@ -127,19 +130,21 @@ function loop(now) {
     US.set([reduced ? 0 : Math.max(f.F, 0), reduced ? 0 : Math.max(f.L, 0), reduced ? 0 : f.rip, p.pres], i * 4); ULf[i] = reduced ? f.lift : 0; UFl[i] = reduced ? 0 : f.fl;
     const e = els[i], tx = lerp(cx, bx + TXO, m), sh = `translate(${-50 * (1 - m)}%, -50%)`;
     const ghost = down[i] && !ready[i]; // finger on, BPM still calibrating: a shimmering placeholder, no number (style.css .ghost)
-    e.bpm.textContent = ready[i] ? Math.round(frame.ch[i].bpm) : ghost ? '00' : '--';
+    put(e.bpm, 'textContent', ready[i] ? Math.round(frame.ch[i].bpm) : ghost ? '00' : '--');
     e.bpm.classList.toggle('off', !down[i]);
     e.bpm.classList.toggle('ghost', ghost);
-    e.lab.textContent = (ready[i] ? `${VOICES[i]} · bpm` : ghost ? `${VOICES[i]} · finding your pulse` : `rest a finger on sensor ${i + 1}`) + (live && i === sensorCh ? ' · sensor' : '');
-    Object.assign(e.bpm.style, { left: `${tx}px`, top: `${lerp(62, 73, m) * u}px`, fontSize: `${lerp(9, 4.4, m) * u}px`, transform: sh });
-    Object.assign(e.lab.style, { left: `${tx}px`, top: `${lerp(69, 76.8, m) * u}px`, fontSize: `${lerp(2.1, 1.7, m) * u}px`, transform: sh });
+    const label = (ready[i] ? `${VOICES[i]} · bpm` : ghost ? `${VOICES[i]} · finding your pulse` : `rest a finger on sensor ${i + 1}`) + (live && i === sensorCh ? ' · sensor' : '');
+    put(e.lab, 'textContent', label);
+    const place = (el, top, size) => { put(el.style, 'left', `${tx}px`); put(el.style, 'top', `${top * u}px`); put(el.style, 'fontSize', `${size * u}px`); put(el.style, 'transform', sh); };
+    place(e.bpm, lerp(62, 73, m), lerp(9, 4.4, m));
+    place(e.lab, lerp(69, 76.8, m), lerp(2.1, 1.7, m));
     p.m = m; p.cx = cx;
   });
   const Rg = RB * big, cyB = Math.min(Math.max(38 * u, 13 * u + Rg), 62 * u - Rg);   // merged blob centre y, kept inside its band
   UB.set([W / 2 * dpr, (H - cyB) * dpr, big > .02 ? Rg * dpr : 0], 12);
   const dye = prog <= .05 ? null : { x: W / 2, y: 38 * u, cyB, RW, big, bumps: P.map((p) => p.bump) };
   fluid?.frame({ t, dt, fade, rm: reduced, blobs: UB, state: US, lift: ULf, flash: UFl, dye });
-  text.style.opacity = fade;
+  put(text.style, 'opacity', String(fade));
   overlay(now, fade);
 }
 requestAnimationFrame(loop);

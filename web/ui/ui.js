@@ -104,4 +104,22 @@ on('tempo', ({ song, heart }) => {
   $('avgbpm').textContent = heart > 0 ? Math.round(heart) : '--';
 });
 
+// Diagnostics (?perf): is the sound breaking up because this thread stalls? Late steps and long stalls say yes;
+// if both stay at 0 while the sound breaks up, the cause is outside the page (CPU or the audio device).
+if (new URLSearchParams(location.search).has('perf')) {
+  const box = document.body.appendChild(document.createElement('pre'));
+  box.style.cssText = 'position:fixed;right:8px;bottom:8px;margin:0;padding:6px 10px;z-index:99;font:13px/1.4 monospace;color:#fff;background:rgba(0,0,0,.75);border-radius:6px;pointer-events:none';
+  let stalls = 0, longest = 0, slow = 0, frames = 0, prev = performance.now(), audio = null;
+  try { new PerformanceObserver((l) => l.getEntries().forEach((e) => { stalls++; longest = Math.max(longest, e.duration); })).observe({ entryTypes: ['longtask'] }); } catch { /* not supported */ }
+  (function tick(now) { frames++; if (now - prev > 34) slow++; prev = now; requestAnimationFrame(tick); })(prev);
+  on('perf', (p) => (audio = p));
+  setInterval(() => {
+    box.textContent = [
+      audio ? `steps ${audio.steps}   late ${audio.late}   smallest lead ${Math.round(audio.worst * 1000)} ms   audio ${audio.state}` : 'audio: not playing',
+      `stalls over 50 ms: ${stalls}   longest ${Math.round(longest)} ms`,
+      `slow frames (under 30 fps): ${slow} of ${frames}`,
+    ].join('\n');
+  }, 500);
+}
+
 on('kits', (names) => $('kit').replaceChildren(...names.map((n) => new Option(n))));
